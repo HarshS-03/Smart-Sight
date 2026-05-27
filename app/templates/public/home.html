@@ -1,0 +1,702 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+  /* ── Hero Section ───────────────────────────────────── */
+  .hero-section {
+    position: relative;
+    min-height: 85vh;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+
+  .hero-bg-wrapper {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 50%, rgba(0, 0, 0, 0) 100%);
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 50%, rgba(0, 0, 0, 0) 100%);
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 60% 40%, rgba(13, 110, 253, 0.06) 0%, transparent 65%),
+      radial-gradient(ellipse 60% 80% at 10% 80%, rgba(13, 110, 253, 0.04) 0%, transparent 60%);
+    z-index: 0;
+  }
+
+  /* glowing orbs */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+    animation: orbPulse 8s ease-in-out infinite alternate;
+  }
+
+  .orb-1 {
+    width: 520px;
+    height: 520px;
+    background: rgba(13, 110, 253, 0.05);
+    top: -80px;
+    right: 5%;
+  }
+
+  .orb-2 {
+    width: 380px;
+    height: 380px;
+    background: rgba(13, 110, 253, 0.03);
+    bottom: 10%;
+    left: 0%;
+    animation-delay: 3s;
+  }
+
+  .orb-3 {
+    width: 260px;
+    height: 260px;
+    background: rgba(6, 182, 212, 0.03);
+    top: 40%;
+    right: 35%;
+    animation-delay: 5s;
+  }
+
+  @keyframes orbPulse {
+    from {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1.12);
+    }
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* eyebrow badge */
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px 6px 8px;
+    background: rgba(13, 110, 253, 0.12);
+    border: 1px solid rgba(13, 110, 253, 0.3);
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #60a5fa;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-badge .dot {
+    width: 8px;
+    height: 8px;
+    background: #3b82f6;
+    border-radius: 50%;
+    animation: blink 2s ease-in-out infinite;
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.8);
+  }
+
+  @keyframes blink {
+
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.3;
+    }
+  }
+
+  .hero-title {
+    font-size: clamp(2.4rem, 5.5vw, 5rem);
+    font-weight: 900;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    color: #fff;
+  }
+
+  .hero-title .accent {
+    background: linear-gradient(135deg, #3b82f6 0%, #0ea5e9 45%, #06b6d4 75%, #a78bfa 100%);
+    background-size: 200% 200%;
+    animation: gradientShift 6s ease infinite;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  @keyframes gradientShift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .hero-sub {
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1.8;
+    max-width: 560px;
+  }
+
+  .hero-cta-group {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-hero-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 36px;
+    background: linear-gradient(135deg, #0d6efd 0%, #0ea5e9 100%);
+    border: none;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: #fff;
+    text-decoration: none;
+    box-shadow: 0 8px 32px rgba(37, 99, 235, 0.4);
+    transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+    letter-spacing: 0.02em;
+  }
+
+  .btn-hero-primary:hover {
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 0 16px 48px rgba(37, 99, 235, 0.55);
+    color: #fff;
+  }
+
+  .btn-hero-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 32px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    backdrop-filter: blur(8px);
+    transition: all 0.35s ease;
+  }
+
+  .btn-hero-outline:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.35);
+    color: #fff;
+    transform: translateY(-2px);
+  }
+
+  /* trust row */
+  .hero-stats {
+    display: flex;
+    gap: 2.5rem;
+    flex-wrap: wrap;
+  }
+
+  .stat-item .num {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    transition: color 0.3s ease;
+  }
+
+  .stat-item:hover .num {
+    color: #60a5fa;
+    text-shadow: 0 0 20px rgba(96, 165, 250, 0.4);
+  }
+
+  .stat-item .label {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  .stat-divider {
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.15), transparent);
+    align-self: stretch;
+  }
+
+  /* right visual card */
+  .hero-visual {
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero-cam-card {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 28px;
+    padding: 24px;
+    backdrop-filter: blur(24px);
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+
+  .hero-cam-card:hover {
+    transform: translateY(-6px) rotateX(2deg);
+  }
+
+  .cam-screen {
+    background: #000;
+    border-radius: 18px;
+    overflow: hidden;
+    aspect-ratio: 16/10;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .cam-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.08) 0%, rgba(13, 110, 253, 0.06) 100%);
+  }
+
+  .cam-scanline {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(59, 130, 246, 0.04) 3px, rgba(59, 130, 246, 0.04) 4px);
+    pointer-events: none;
+  }
+
+  .cam-hud-corner {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-color: rgba(59, 130, 246, 0.7);
+    border-style: solid;
+  }
+
+  .hud-tl {
+    top: 16px;
+    left: 16px;
+    border-width: 2px 0 0 2px;
+    border-radius: 4px 0 0 0;
+  }
+
+  .hud-tr {
+    top: 16px;
+    right: 16px;
+    border-width: 2px 2px 0 0;
+    border-radius: 0 4px 0 0;
+  }
+
+  .hud-bl {
+    bottom: 16px;
+    left: 16px;
+    border-width: 0 0 2px 2px;
+    border-radius: 0 0 0 4px;
+  }
+
+  .hud-br {
+    bottom: 16px;
+    right: 16px;
+    border-width: 0 2px 2px 0;
+    border-radius: 0 0 4px 0;
+  }
+
+  .cam-face-box {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 38%;
+    height: 50%;
+    border: 2px solid rgba(59, 130, 246, 0.6);
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.15), inset 0 0 20px rgba(59, 130, 246, 0.05);
+    animation: faceBoxPulse 3s ease-in-out infinite;
+  }
+
+  .cam-face-label {
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #60a5fa;
+    letter-spacing: 0.12em;
+    white-space: nowrap;
+    text-transform: uppercase;
+    background: rgba(37, 99, 235, 0.2);
+    padding: 3px 10px;
+    border-radius: 99px;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+  }
+
+  @keyframes faceBoxPulse {
+
+    0%,
+    100% {
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.15), inset 0 0 20px rgba(59, 130, 246, 0.05);
+    }
+
+    50% {
+      box-shadow: 0 0 35px rgba(59, 130, 246, 0.35), inset 0 0 25px rgba(59, 130, 246, 0.1);
+    }
+  }
+
+  .cam-status-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 18px;
+    padding: 10px 16px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 12px;
+    font-size: 0.8rem;
+  }
+
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    background: #22c55e;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.8);
+    animation: blink 2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  /* floating badges on the card */
+  .float-badge {
+    position: absolute;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 8px 14px;
+    backdrop-filter: blur(12px);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    white-space: nowrap;
+    z-index: 10;
+  }
+
+  .float-badge-1 {
+    top: -15px;
+    right: 15px;
+    animation: floatBadge 4s ease-in-out infinite;
+  }
+
+  .float-badge-2 {
+    bottom: 30px;
+    left: -15px;
+    animation: floatBadge 4s ease-in-out infinite 1.5s;
+  }
+
+  @keyframes floatBadge {
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+
+  /* ── Feature Cards ──────────────────────────────────── */
+  .features-section {
+    padding: 6rem 0 4rem;
+    background: transparent;
+    position: relative;
+    z-index: 1;
+  }
+
+  .section-eyebrow {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: #3b82f6;
+    margin-bottom: 0.75rem;
+  }
+
+  .section-title {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: #fff;
+    line-height: 1.15;
+  }
+
+  .feature-card {
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(59, 130, 246, 0.0);
+    border-radius: 24px;
+    padding: 36px;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    backdrop-filter: blur(12px);
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.7), rgba(6, 182, 212, 0.5), transparent);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
+  .feature-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 20%, rgba(13, 110, 253, 0.06) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+  }
+
+  .feature-card:hover::before {
+    opacity: 1;
+  }
+
+  .feature-card:hover::after {
+    opacity: 1;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-12px);
+    border-color: rgba(59, 130, 246, 0.25);
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.45), 0 0 40px rgba(59, 130, 246, 0.1);
+  }
+
+  .feature-icon-wrap {
+    width: 56px;
+    height: 56px;
+    background: rgba(37, 99, 235, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: all 0.4s ease;
+  }
+
+  .feature-card:hover .feature-icon-wrap {
+    background: rgba(37, 99, 235, 0.2);
+    border-color: rgba(59, 130, 246, 0.4);
+    transform: scale(1.1);
+  }
+
+  .feature-card h3 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 0.75rem;
+  }
+
+  .feature-card p {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.92rem;
+    line-height: 1.7;
+    margin: 0;
+  }
+
+  /* ── Bottom CTA strip ───────────────────────────────── */
+  .cta-strip {
+    margin-top: 5rem;
+    padding: 60px;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.7) 0%, rgba(17, 24, 52, 0.7) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    border-radius: 32px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(37, 99, 235, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  }
+
+  .cta-strip::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(59, 130, 246, 0.22) 0%, transparent 65%),
+      radial-gradient(ellipse 40% 40% at 80% 80%, rgba(6, 182, 212, 0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .cta-strip::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.6), rgba(6, 182, 212, 0.4), transparent);
+    pointer-events: none;
+  }
+</style>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- HERO SECTION -->
+<!-- ════════════════════════════════════════════════════════ -->
+<section class="hero-section">
+  <div class="hero-bg-wrapper">
+    <div class="hero-bg"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="container hero-content">
+    <div class="row align-items-center g-5">
+      <!-- Center: Copy -->
+      <div class="col-lg-10 mx-auto text-center">
+
+        <h1 class="hero-title mb-4" data-reveal data-reveal-delay="0">
+          Smart <span class="accent">Sight</span>
+        </h1>
+
+        <p class="hero-sub mb-5 mx-auto" style="max-width: 650px;" data-reveal data-reveal-delay="100">
+          Harnessing YOLO object detection and state-of-the-art Computer Vision to automate tracking, detect faces, and
+          ensure smarter monitoring in real-time.
+        </p>
+
+        <div class="hero-cta-group mb-5 justify-content-center" data-reveal data-reveal-delay="200">
+          <a href="{% url 'detection' %}" class="btn-hero-primary">
+            <i class="bi bi-play-fill"></i>
+            Start Detection
+          </a>
+          <a href="{% url 'about' %}" class="btn-hero-outline">
+            Explore Project
+            <i class="bi bi-arrow-right"></i>
+          </a>
+        </div>
+
+        <div class="hero-stats justify-content-center" data-reveal data-reveal-delay="300">
+          <div class="stat-item">
+            <div class="num" data-count-to="99" data-suffix="%">0%</div>
+            <div class="label">Detection Accuracy</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="num" data-count-to="60" data-suffix="">0</div>
+            <div class="label">FPS Processing</div>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="num">24/7</div>
+            <div class="label">Live Monitoring</div>
+          </div>
+        </div>
+
+        <script>
+          document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('[data-count-to]').forEach(function (el) {
+              const target = parseInt(el.getAttribute('data-count-to'));
+              const suffix = el.getAttribute('data-suffix') || '';
+              let current = 0;
+              const duration = 1800;
+              const step = Math.ceil(target / (duration / 16));
+              const timer = setInterval(function () {
+                current = Math.min(current + step, target);
+                el.textContent = current + suffix;
+                if (current >= target) clearInterval(timer);
+              }, 16);
+            });
+          });
+        </script>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- FEATURES SECTION -->
+<!-- ════════════════════════════════════════════════════════ -->
+<section class="features-section">
+  <div class="container">
+    <div class="text-center mb-5" data-reveal>
+      <p class="section-eyebrow">Core Technology</p>
+      <h2 class="section-title">Built for precision.<br>Designed for scale.</h2>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-md-4" data-reveal data-reveal-delay="0">
+        <div class="feature-card">
+          <div class="feature-icon-wrap">
+            <i class="bi bi-camera-video text-primary"></i>
+          </div>
+          <h3>Real-time OpenCV</h3>
+          <p>Lightning-fast image processing directly from camera feeds. Engineered for minimal latency with
+            hardware-accelerated pipelines.</p>
+        </div>
+      </div>
+      <div class="col-md-4" data-reveal data-reveal-delay="120">
+        <div class="feature-card">
+          <div class="feature-icon-wrap">
+            <i class="bi bi-person-bounding-box text-primary"></i>
+          </div>
+          <h3>YOLO Detection</h3>
+          <p>State-of-the-art YOLOv8 models for accurate and robust face detection in complex environments, day or
+            night.</p>
+        </div>
+      </div>
+      <div class="col-md-4" data-reveal data-reveal-delay="240">
+        <div class="feature-card">
+          <div class="feature-icon-wrap">
+            <i class="bi bi-layers text-primary"></i>
+          </div>
+          <h3>Django Core</h3>
+          <p>Built on a battle-tested web framework with a premium front-end, ensuring secure session management and
+            smooth user flows.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA Strip -->
+    <div class="cta-strip" data-reveal data-reveal-delay="0">
+      <h2 class="fw-900 text-white mb-3" style="font-size:clamp(1.6rem,3.5vw,2.5rem);font-weight:900;">Ready to secure
+        your premises?</h2>
+      <p class="text-secondary mb-4" style="font-size:1.05rem;">Jump into the detection console and start monitoring in
+        seconds.</p>
+      <a href="{% url 'detection' %}" class="btn-hero-primary" style="display:inline-flex;">
+        <i class="bi bi-shield-check"></i>
+        Launch Detection Console
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

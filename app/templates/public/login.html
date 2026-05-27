@@ -1,0 +1,539 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 80vh;">
+    <div class="col-md-5 col-lg-4">
+        <!-- Centric Card with Glow -->
+        <div class="login-card p-4 p-md-5 rounded-5 position-relative overflow-hidden" data-reveal style="background: rgba(255, 255, 255, 0.03); 
+                    border: 1px solid rgba(255, 255, 255, 0.08); 
+                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); 
+                    backdrop-filter: blur(20px);
+                    -webkit-backdrop-filter: blur(20px);">
+
+        <!-- Background Glow Effect -->
+        <div class="position-absolute top-0 start-50 translate-middle"
+            style="width: 300px; height: 300px; background: radial-gradient(circle, rgba(13, 110, 253, 0.18) 0%, rgba(6, 182, 212, 0.06) 50%, transparent 70%); z-index: -1;">
+        </div>
+
+            <div class="text-center mb-5">
+                <div class="shield-icon-wrap mx-auto mb-4">
+                  <i class="bi bi-shield-lock-fill text-primary" style="font-size: 2.5rem;"></i>
+                </div>
+                <h2 class="fw-bold text-white mb-2" style="font-size:1.7rem;letter-spacing:-0.02em;">Welcome Back</h2>
+                <p class="text-secondary small">Access the Smart Sight dashboard</p>
+            </div>
+
+            <form method="POST" class="needs-validation">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <div class="form-floating custom-form-floating">
+                        <input type="text" name="username" id="username" class="form-control" placeholder="Username"
+                            required>
+                        <label for="username" class="text-secondary">Username</label>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="form-floating custom-form-floating position-relative">
+                        <input type="password" name="password" id="password" class="form-control pe-5" placeholder="Password"
+                            required>
+                        <label for="password" class="text-secondary">Password</label>
+                        <button type="button" class="btn position-absolute top-50 end-0 translate-middle-y border-0 text-secondary hover-glow" id="togglePassword" style="background: transparent; z-index: 10; padding-right: 1.25rem;">
+                            <i class="bi bi-eye-slash" id="toggleIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end mb-4">
+                    <a href="{% url 'forgot_password' %}"
+                        class="small text-primary text-decoration-none hover-glow">Forgot Password?</a>
+                </div>
+
+                {% if error %}
+                <div class="alert alert-danger border-0 bg-danger bg-opacity-10 text-danger small mb-4 rounded-3 d-flex align-items-center"
+                    role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ error }}
+                </div>
+                {% endif %}
+
+                <button type="submit"
+                    class="btn btn-primary w-100 rounded-pill fw-bold shadow-lg transition-all d-flex align-items-center justify-content-center gap-2"
+                    style="height: 58px;">
+                    <span>Login</span>
+                </button>
+            </form>
+
+            <!-- Face Login Divider & Button -->
+            <div class="d-flex align-items-center my-4">
+                <hr class="flex-grow-1 border-secondary opacity-25">
+                <span class="mx-3 text-secondary small fw-bold" style="font-size: 0.8rem;">OR</span>
+                <hr class="flex-grow-1 border-secondary opacity-25">
+            </div>
+
+            <button type="button" id="btnFaceLogin"
+                class="btn btn-outline-light w-100 rounded-pill fw-bold transition-all d-flex align-items-center justify-content-center gap-2 hover-glow"
+                style="height: 58px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.1);">
+                <i class="bi bi-person-bounding-box text-primary fs-5"></i>
+                <span class="text-white">Login with Face</span>
+            </button>
+
+            <div class="text-center mt-5">
+                <p class="text-secondary opacity-50 x-small mb-0" style="font-size: 0.75rem;">
+                    Encryption active. System activity is logged.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .custom-form-floating .form-control {
+        background-color: rgba(255, 255, 255, 0.02) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: white !important;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .custom-form-floating .form-control:focus {
+        border-color: #0d6efd !important;
+        box-shadow: 0 0 15px rgba(13, 110, 253, 0.2) !important;
+        background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .custom-form-floating label,
+    .custom-form-floating .form-control:focus~label,
+    .custom-form-floating .form-control:not(:placeholder-shown)~label {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+
+    /* Target Bootstrap's specific label background pseudo-element */
+    .custom-form-floating label::after {
+        background: transparent !important;
+        background-color: transparent !important;
+    }
+
+    .form-floating>.form-control:focus~label,
+    .form-floating>.form-control:not(:placeholder-shown)~label {
+        background: transparent !important;
+        padding: 0.5rem 1.25rem !important;
+        transform: scale(0.8) translateY(-0.6rem) translateX(0.1rem) !important;
+        color: #0d6efd !important;
+        opacity: 1;
+        font-weight: 700;
+    }
+
+    .hover-glow:hover {
+        text-shadow: 0 0 8px rgba(13, 110, 253, 0.5);
+        color: #fff !important;
+    }
+
+    .login-card {
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(13, 110, 253, 0.05);
+    }
+
+    .login-card:hover {
+        transform: translateY(-6px);
+        border-color: rgba(13, 110, 253, 0.3) !important;
+        box-shadow: 0 35px 70px -12px rgba(0, 0, 0, 0.6), 0 0 40px rgba(13, 110, 253, 0.1), 0 0 0 1px rgba(13, 110, 253, 0.15) !important;
+    }
+
+    /* ── Shield Icon Ring ─────────────────────────────── */
+    .shield-icon-wrap {
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        background: rgba(13, 110, 253, 0.1);
+        border: 1px solid rgba(13, 110, 253, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .shield-icon-wrap::before {
+        content: '';
+        position: absolute;
+        inset: -6px;
+        border-radius: 50%;
+        border: 2px solid transparent;
+        border-top-color: rgba(13, 110, 253, 0.7);
+        border-right-color: rgba(6, 182, 212, 0.4);
+        animation: ringRotate 2.5s linear infinite;
+    }
+
+    .shield-icon-wrap::after {
+        content: '';
+        position: absolute;
+        inset: -12px;
+        border-radius: 50%;
+        border: 1px solid transparent;
+        border-bottom-color: rgba(13, 110, 253, 0.3);
+        border-left-color: rgba(6, 182, 212, 0.2);
+        animation: ringRotate 4s linear infinite reverse;
+    }
+
+    @keyframes ringRotate {
+        100% { transform: rotate(360deg); }
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #0b5ed7 0%, #0a58ca 100%);
+        box-shadow: 0 10px 25px rgba(13, 110, 253, 0.4) !important;
+        transform: scale(1.01);
+    }
+
+    /* ── Biometric HUD Styles ─────────────────────────── */
+    .hud-corner {
+        width: 20px;
+        height: 20px;
+        border-color: #0d6efd;
+        border-style: solid;
+        pointer-events: none;
+    }
+    .top-left { border-width: 3px 0 0 3px !important; border-top-left-radius: 6px; }
+    .top-right { border-width: 3px 3px 0 0 !important; border-top-right-radius: 6px; }
+    .bottom-left { border-width: 0 0 3px 3px !important; border-bottom-left-radius: 6px; }
+    .bottom-right { border-width: 0 3px 3px 0 !important; border-bottom-right-radius: 6px; }
+    
+    @keyframes scanLine {
+        0%, 100% { top: 0%; }
+        50% { top: 100%; }
+    }
+    
+    @keyframes spin {
+        100% { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 0.25; }
+        50% { transform: scale(1.05); opacity: 0.6; }
+    }
+    
+    .hud-target-inner {
+        animation: pulse 2s infinite ease-in-out;
+    }
+    
+    .animate-pulse {
+        animation: blink 1.5s infinite;
+    }
+    
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+    }
+    
+    .shadow-primary {
+        box-shadow: 0 4px 15px rgba(13, 110, 253, 0.4) !important;
+    }
+    
+    #faceLoginModal .modal-content {
+        transition: border-color 0.5s ease, box-shadow 0.5s ease;
+    }
+    
+    .animate-scale {
+        animation: successScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    
+    @keyframes successScale {
+        from { transform: scale(0.5); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+    
+    .inset-0 {
+        top: 0; right: 0; bottom: 0; left: 0;
+    }
+</style>
+
+<!-- Biometric Face Scanner Modal -->
+<div class="modal fade" id="faceLoginModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="faceLoginModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content overflow-hidden" 
+            style="background: rgba(10, 15, 30, 0.95); 
+                   border: 1px solid rgba(13, 110, 253, 0.25); 
+                   border-radius: 24px; 
+                   box-shadow: 0 0 40px rgba(13, 110, 253, 0.15); 
+                   backdrop-filter: blur(25px); 
+                   -webkit-backdrop-filter: blur(25px);">
+            
+            <!-- Modal Header -->
+            <div class="modal-header border-0 p-4 pb-0 d-flex justify-content-between align-items-center">
+                <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2" id="faceLoginModalLabel">
+                    <i class="bi bi-cpu text-primary animate-pulse"></i>
+                    <span>BIOMETRIC SCANNER</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white opacity-50 hover-glow" id="btnCancelScan" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="modal-body p-4 text-center">
+                <p class="text-secondary small mb-4">Smart Sight Admin Biometric Authentication</p>
+                
+                <!-- Scanning Container -->
+                <div class="position-relative mx-auto mb-4 overflow-hidden rounded-4 border" 
+                     style="width: 320px; height: 320px; background: #000; border-color: rgba(255, 255, 255, 0.1) !important;">
+                    
+                    <!-- Webcam Stream (via OpenCV Backend Feed) -->
+                    <img id="opencvVideo" src="" class="w-100 h-100 object-fit-cover d-none" alt="Scanner Feed">
+                    
+                    <!-- Biometric HUD Overlays -->
+                    <div class="biometric-overlay position-absolute inset-0 d-flex flex-column justify-content-between p-4 pointer-events-none">
+                        <!-- Corners -->
+                        <div class="d-flex justify-content-between">
+                            <div class="hud-corner top-left"></div>
+                            <div class="hud-corner top-right"></div>
+                        </div>
+                        
+                        <!-- Pulse Target Ring -->
+                        <div class="hud-target-ring position-absolute top-50 start-50 translate-middle rounded-circle border border-primary opacity-50"
+                             style="width: 220px; height: 220px; border-width: 2px !important; border-style: dashed !important; animation: spin 15s linear infinite;">
+                        </div>
+                        
+                        <div class="hud-target-inner position-absolute top-50 start-50 translate-middle rounded-circle border border-primary border-opacity-25"
+                             style="width: 170px; height: 170px;">
+                        </div>
+
+                        <!-- Scan Laser Line -->
+                        <div class="hud-laser position-absolute w-100 left-0 bg-primary opacity-75"
+                             style="height: 3px; box-shadow: 0 0 12px #0d6efd; animation: scanLine 3s ease-in-out infinite;">
+                        </div>
+                        
+                        <!-- Bottom Corners -->
+                        <div class="d-flex justify-content-between">
+                            <div class="hud-corner bottom-left"></div>
+                            <div class="hud-corner bottom-right"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Success Overlay -->
+                    <div id="scanSuccessOverlay" class="position-absolute inset-0 d-flex flex-column align-items-center justify-content-center bg-black bg-opacity-75 opacity-0 transition-all pointer-events-none" style="z-index: 10;">
+                        <div class="success-ring rounded-circle bg-success bg-opacity-10 border border-success d-flex align-items-center justify-content-center mb-3"
+                             style="width: 80px; height: 80px; border-width: 2px !important;">
+                            <i class="bi bi-shield-check text-success fs-1 animate-scale"></i>
+                        </div>
+                        <h5 class="text-success fw-bold mb-1">IDENTITY VERIFIED</h5>
+                        <p class="text-secondary small mb-0">Access Granted</p>
+                    </div>
+
+                    <!-- Error Overlay -->
+                    <div id="scanErrorOverlay" class="position-absolute inset-0 d-flex flex-column align-items-center justify-content-center bg-black bg-opacity-75 opacity-0 transition-all pointer-events-none" style="z-index: 10;">
+                        <div class="error-ring rounded-circle bg-danger bg-opacity-10 border border-danger d-flex align-items-center justify-content-center mb-3"
+                             style="width: 80px; height: 80px; border-width: 2px !important;">
+                            <i class="bi bi-shield-x text-danger fs-1"></i>
+                        </div>
+                        <h5 class="text-danger fw-bold mb-1">VERIFICATION FAILED</h5>
+                        <p id="scanErrorText" class="text-secondary small px-3 mb-0">Unrecognized user</p>
+                    </div>
+                </div>
+                
+                <!-- Status & Action Controls -->
+                <div class="hud-status-wrapper py-2 mb-3">
+                    <span id="scanStatus" class="badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-4 py-2 fs-6 fw-semibold d-inline-flex align-items-center gap-2">
+                        <span class="spinner-grow spinner-grow-sm text-primary" id="scanStatusSpinner" role="status" aria-hidden="true"></span>
+                        <span id="scanStatusText">Initializing Biometric HUD...</span>
+                    </span>
+                </div>
+                
+                <div class="d-flex justify-content-center gap-3">
+                    <button type="button" id="btnManualCapture" class="btn btn-primary rounded-pill px-4 fw-bold shadow-primary transition-all d-none">
+                        <i class="bi bi-camera-fill me-2"></i> Scan Face
+                    </button>
+                    <button type="button" id="btnRetryScan" class="btn btn-outline-primary rounded-pill px-4 fw-bold transition-all d-none">
+                        <i class="bi bi-arrow-clockwise me-2"></i> Retry
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="modal-footer border-0 p-4 pt-0 justify-content-center">
+                <p class="text-secondary opacity-50 x-small mb-0" style="font-size: 0.7rem;">
+                    Smart Sight Secure Biometric Core v2.0 • Restricted Area
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Toggle Password Visibility
+        const togglePassword = document.querySelector('#togglePassword');
+        const password = document.querySelector('#password');
+        const toggleIcon = document.querySelector('#toggleIcon');
+
+        if (togglePassword && password && toggleIcon) {
+            togglePassword.addEventListener('click', function () {
+                const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                password.setAttribute('type', type);
+                
+                if (type === 'password') {
+                    toggleIcon.classList.remove('bi-eye');
+                    toggleIcon.classList.add('bi-eye-slash');
+                    togglePassword.classList.add('text-secondary');
+                    togglePassword.classList.remove('text-primary');
+                } else {
+                    toggleIcon.classList.remove('bi-eye-slash');
+                    toggleIcon.classList.add('bi-eye');
+                    togglePassword.classList.remove('text-secondary');
+                    togglePassword.classList.add('text-primary');
+                }
+            });
+        }
+
+        // ── Biometric Face Login Scripts ───────────────────
+        const btnFaceLogin = document.getElementById('btnFaceLogin');
+        const btnCancelScan = document.getElementById('btnCancelScan');
+        const btnRetryScan = document.getElementById('btnRetryScan');
+        const btnManualCapture = document.getElementById('btnManualCapture');
+        const faceLoginModalEl = document.getElementById('faceLoginModal');
+        
+        let faceModal = null;
+        if (faceLoginModalEl) {
+            faceModal = new bootstrap.Modal(faceLoginModalEl);
+            
+            // Clean up camera stream if modal is closed in any way
+            faceLoginModalEl.addEventListener('hidden.bs.modal', function () {
+                stopWebcam();
+            });
+        }
+        
+        if (btnFaceLogin) {
+            btnFaceLogin.addEventListener('click', function() {
+                if (faceModal) {
+                    faceModal.show();
+                    startWebcam();
+                }
+            });
+        }
+        
+        if (btnCancelScan) {
+            btnCancelScan.addEventListener('click', function() {
+                stopWebcam();
+            });
+        }
+        
+        if (btnRetryScan) {
+            btnRetryScan.addEventListener('click', function() {
+                startWebcam();
+            });
+        }
+        
+        if (btnManualCapture) {
+            btnManualCapture.addEventListener('click', function() {
+                captureAndVerify();
+            });
+        }
+        
+        let checkInterval = null;
+        let currentFaceToken = null;
+        const opencvVideo = document.getElementById('opencvVideo');
+
+        function startWebcam() {
+            const statusText = document.getElementById('scanStatusText');
+            const statusBadge = document.getElementById('scanStatus');
+            const statusSpinner = document.getElementById('scanStatusSpinner');
+            const retryBtn = document.getElementById('btnRetryScan');
+            const manualBtn = document.getElementById('btnManualCapture');
+            
+            // Reset overlays & modal borders
+            const successOverlay = document.getElementById('scanSuccessOverlay');
+            const errorOverlay = document.getElementById('scanErrorOverlay');
+            
+            successOverlay.classList.remove('opacity-100');
+            successOverlay.classList.add('opacity-0');
+            errorOverlay.classList.remove('opacity-100');
+            errorOverlay.classList.add('opacity-0');
+            
+            const modalContent = document.querySelector('#faceLoginModal .modal-content');
+            modalContent.style.borderColor = 'rgba(13, 110, 253, 0.25)';
+            modalContent.style.boxShadow = '0 0 40px rgba(13, 110, 253, 0.15)';
+            
+            statusText.innerText = "Initializing Host Camera...";
+            statusBadge.className = "badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-4 py-2 fs-6 fw-semibold d-inline-flex align-items-center gap-2";
+            if (statusSpinner) statusSpinner.classList.remove('d-none');
+            
+            retryBtn.classList.add('d-none');
+            manualBtn.classList.add('d-none');
+            
+            // Generate a secure unique token for this specific scan session
+            currentFaceToken = 'face_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
+            console.log("Generated face scan token:", currentFaceToken);
+            
+            // Set image source to the OpenCV stream with the token
+            opencvVideo.src = "{% url 'face_login_feed' %}?token=" + currentFaceToken;
+            opencvVideo.classList.remove('d-none');
+            
+            statusText.innerText = "Webcam Active. Align Face...";
+            
+            // Start Polling backend session check every 200ms
+            if (checkInterval) clearInterval(checkInterval);
+            checkInterval = setInterval(checkVerificationStatus, 200);
+        }
+
+        function stopWebcam() {
+            if (checkInterval) {
+                clearInterval(checkInterval);
+                checkInterval = null;
+            }
+            if (opencvVideo) {
+                opencvVideo.src = "";
+                opencvVideo.classList.add('d-none');
+            }
+            currentFaceToken = null;
+        }
+
+        function checkVerificationStatus() {
+            if (!currentFaceToken) return;
+            
+            const statusText = document.getElementById('scanStatusText');
+            const statusBadge = document.getElementById('scanStatus');
+            const statusSpinner = document.getElementById('scanStatusSpinner');
+            const retryBtn = document.getElementById('btnRetryScan');
+            const manualBtn = document.getElementById('btnManualCapture');
+            
+            fetch("{% url 'face_login_check' %}?token=" + currentFaceToken)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Stop polling
+                    clearInterval(checkInterval);
+                    checkInterval = null;
+                    
+                    statusText.innerText = "Access Granted!";
+                    statusBadge.classList.remove('bg-primary', 'bg-warning', 'text-primary', 'text-warning', 'border-primary', 'border-warning');
+                    statusBadge.classList.add('bg-success', 'text-success', 'border-success');
+                    if (statusSpinner) statusSpinner.classList.add('d-none');
+                    
+                    // Show Success Overlay
+                    const successOverlay = document.getElementById('scanSuccessOverlay');
+                    successOverlay.classList.remove('opacity-0');
+                    successOverlay.classList.add('opacity-100');
+                    
+                    // Pulse the modal green
+                    document.querySelector('#faceLoginModal .modal-content').style.borderColor = 'rgba(25, 135, 84, 0.8)';
+                    document.querySelector('#faceLoginModal .modal-content').style.boxShadow = '0 0 50px rgba(25, 135, 84, 0.4)';
+                    
+                    // Redirect after 400ms
+                    setTimeout(() => {
+                        stopWebcam();
+                        window.location.href = data.redirect_url;
+                    }, 400);
+                }
+            })
+            .catch(err => {
+                console.error("Polling Error:", err);
+            });
+        }
+    });
+</script>
+{% endblock %}

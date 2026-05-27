@@ -1,0 +1,693 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}About Us{% endblock %}
+{% block content %}
+<style>
+    /* ── Design Tokens & Base Styles ─────────────────── */
+    .about-container {
+        --primary: #3b82f6;
+        --primary-glow: rgba(59, 130, 246, 0.5);
+        --surface: rgba(15, 23, 42, 0.45);
+        --border: rgba(255, 255, 255, 0.06);
+        --border-hover: rgba(59, 130, 246, 0.9);
+        --text-secondary: #94a3b8;
+        --transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        
+        padding-top: 5rem;
+        padding-bottom: 7rem;
+        position: relative;
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(60px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-slide-up {
+        animation: slideUp 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    /* Ambient Tech Grid Background (Static & Subtle) */
+    .about-bg-grid {
+        position: absolute;
+        inset: 0;
+        background-image: 
+            linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+        background-size: 50px 50px;
+        mask-image: radial-gradient(circle at 50% 30%, black 20%, transparent 80%);
+        -webkit-mask-image: radial-gradient(circle at 50% 30%, black 20%, transparent 80%);
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    /* ── Hero Section ────────────────────────────────── */
+    .about-hero {
+        text-align: center;
+        padding: 4rem 0 3rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .about-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        background: rgba(59, 130, 246, 0.08);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: 100px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #93c5fd;
+        margin-bottom: 1.75rem;
+    }
+
+    .about-eyebrow .dot {
+        width: 6px;
+        height: 6px;
+        background: var(--primary);
+        border-radius: 50%;
+        box-shadow: 0 0 8px var(--primary);
+    }
+
+    .about-title {
+        font-size: clamp(2.5rem, 5vw, 4.2rem);
+        font-weight: 900;
+        letter-spacing: -0.025em;
+        color: #fff;
+        line-height: 1.15;
+        margin-bottom: 1.5rem;
+    }
+
+    .about-title .accent {
+        background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .about-subtitle {
+        font-size: 1.1rem;
+        color: var(--text-secondary);
+        line-height: 1.8;
+        max-width: 720px;
+        margin: 0 auto;
+    }
+
+    /* ── Section Dividers & Headers ──────────────────── */
+    .section-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+        margin: 5rem 0;
+    }
+
+    .section-header {
+        text-align: center;
+        margin-bottom: 3.5rem;
+    }
+
+    .section-eyebrow {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .section-title {
+        font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: #fff;
+    }
+
+    .section-desc {
+        font-size: 0.98rem;
+        color: var(--text-secondary);
+        max-width: 600px;
+        margin: 0.5rem auto 0;
+        line-height: 1.6;
+    }
+
+    /* ── Project Overview & Details ──────────────────── */
+    .project-detail-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 40px;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        margin-bottom: 2rem;
+        transition: var(--transition);
+    }
+
+    .project-detail-card:hover {
+        transform: translateY(-8px);
+        border-color: var(--border-hover);
+        box-shadow: 
+            0 20px 40px rgba(0, 0, 0, 0.3),
+            0 0 30px var(--primary-glow);
+    }
+
+    .detail-heading {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .detail-heading i {
+        color: var(--primary);
+    }
+
+    .detail-text {
+        font-size: 0.95rem;
+        color: var(--text-secondary);
+        line-height: 1.75;
+        margin-bottom: 0;
+    }
+
+    /* ── Pop-up Dev Cards ────────────────────────────── */
+    .dev-card {
+        position: relative;
+        border-radius: 28px;
+        overflow: hidden;
+        aspect-ratio: 3/4;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        transition: var(--transition);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .dev-card:hover {
+        transform: translateY(-10px);
+        border-color: var(--border-hover);
+        box-shadow: 
+            0 24px 48px rgba(0, 0, 0, 0.4),
+            0 0 30px var(--primary-glow);
+    }
+
+    .dev-img-container {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .dev-card:hover .dev-img-container {
+        transform: scale(1.08);
+    }
+
+    .dev-img-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center 20%;
+    }
+
+    .dev-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.4) 40%, transparent 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 30px;
+        z-index: 2;
+    }
+
+    .dev-info {
+        transform: translateY(50px);
+        transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        text-align: center;
+    }
+
+    .dev-card:hover .dev-info {
+        transform: translateY(0);
+    }
+
+    .dev-name {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 1rem;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+
+    .dev-socials {
+        display: inline-flex;
+        gap: 12px;
+        opacity: 0;
+        transform: scale(0.8);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .dev-card:hover .dev-socials {
+        opacity: 1;
+        transform: scale(1);
+        transition-delay: 0.1s;
+    }
+
+    .social-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        text-decoration: none;
+        font-size: 1.1rem;
+        transition: var(--transition);
+        backdrop-filter: blur(8px);
+    }
+
+    .social-btn:hover {
+        transform: translateY(-4px) scale(1.1);
+        color: #fff;
+    }
+
+    .social-btn.linkedin:hover { 
+        background: rgba(10, 102, 194, 0.8); 
+        border-color: #0a66c2; 
+        box-shadow: 0 5px 15px rgba(10, 102, 194, 0.4); 
+    }
+    
+    .social-btn.github:hover { 
+        background: rgba(36, 41, 46, 0.9); 
+        border-color: #24292e; 
+        box-shadow: 0 5px 15px rgba(36, 41, 46, 0.4); 
+    }
+    
+    .social-btn.instagram:hover { 
+        background: rgba(244, 63, 94, 0.8); 
+        border-color: #f43f5e; 
+        box-shadow: 0 5px 15px rgba(244, 63, 94, 0.4); 
+    }
+
+    /* ── Pillars Section ─────────────────────────────── */
+    .pillar-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 36px 30px;
+        text-align: center;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        transition: var(--transition);
+        height: 100%;
+    }
+
+    .pillar-card:hover {
+        transform: translateY(-6px);
+        border-color: var(--border-hover);
+        box-shadow: 
+            0 20px 40px rgba(0, 0, 0, 0.3),
+            0 0 25px var(--primary-glow);
+    }
+
+    .pillar-icon {
+        width: 52px;
+        height: 52px;
+        background: rgba(59, 130, 246, 0.08);
+        border: 1px solid rgba(59, 130, 246, 0.15);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+        color: #60a5fa;
+        margin: 0 auto 1.5rem;
+        transition: var(--transition);
+    }
+
+    .pillar-card:hover .pillar-icon {
+        background: rgba(59, 130, 246, 0.3);
+        border-color: rgba(59, 130, 246, 0.8);
+        box-shadow: 0 0 20px var(--primary-glow);
+        color: #fff;
+        transform: scale(1.1);
+    }
+
+    .pillar-title {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 0.75rem;
+    }
+
+    .pillar-desc {
+        font-size: 0.88rem;
+        color: var(--text-secondary);
+        line-height: 1.7;
+        margin: 0;
+    }
+
+    /* ── Technology Stack Section ────────────────────── */
+    .tech-stack-section {
+        position: relative;
+        z-index: 1;
+    }
+
+    .tech-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 16px;
+    }
+
+    .tech-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 20px;
+        text-align: center;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        transition: var(--transition);
+    }
+
+    .tech-card:hover {
+        transform: translateY(-6px);
+        border-color: var(--border-hover);
+        background: rgba(59, 130, 246, 0.1);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2), 0 0 15px var(--primary-glow);
+    }
+
+    .tech-icon {
+        font-size: 1.8rem;
+        color: var(--primary);
+        margin-bottom: 0.75rem;
+        transition: var(--transition);
+    }
+
+    .tech-card:hover .tech-icon {
+        transform: scale(1.15) translateY(-2px);
+        color: #fff;
+        text-shadow: 0 0 10px var(--primary-glow);
+    }
+
+    .tech-name {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 4px;
+    }
+
+    .tech-use {
+        font-size: 0.72rem;
+        color: var(--text-secondary);
+    }
+</style>
+
+<div class="about-container">
+    <div class="about-bg-grid"></div>
+
+    <div class="container position-relative" style="z-index: 1;">
+        
+        <!-- ═══ HERO ═══ -->
+        <section class="about-hero animate-slide-up">
+            <h1 class="about-title">
+                Smart <span class="accent">Sight</span>
+            </h1>
+            <p class="about-subtitle">
+                An intelligent surveillance project that leverages Computer Vision and YOLO machine learning models
+                to detect faces, track movement, and transform passive CCTV into an active monitoring hub.
+            </p>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- ═══ ABOUT THE PROJECT ═══ -->
+        <section class="project-details animate-slide-up" style="animation-delay: 0.15s">
+            <div class="section-header">
+                <p class="section-eyebrow">Overview</p>
+                <h2 class="section-title">About the Project</h2>
+                <p class="section-desc">A deep dive into the engineering, security mechanisms, and capabilities of the Smart Sight Platform.</p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="project-detail-card h-100">
+                        <div class="detail-heading">
+                            <i class="bi bi-cpu"></i>
+                            <span>Intelligent Processing Core</span>
+                        </div>
+                        <p class="detail-text">
+                            At the heart of the system is the combination of OpenCV and YOLOv8 deep learning models. 
+                            Traditional systems simply record footage, placing the burden of analysis on humans. Our system 
+                            ingests live RTSP or local video streams, normalizes the frames, and runs inference pipelines 
+                            in milliseconds to detect and identify faces, tracking occurrences instantly with zero frame drop.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="project-detail-card h-100">
+                        <div class="detail-heading">
+                            <i class="bi bi-shield-lock"></i>
+                            <span>Robust Security Framework</span>
+                        </div>
+                        <p class="detail-text">
+                            Security is built directly into every tier. Authorized personnel access the platform via an 
+                            encrypted role-based login system. The dataset storage, detection consoles, and report aggregators 
+                            remain locked behind Django middleware guards. Bulk dataset imports are protected by custom system 
+                            synchronization protocols that validate file trees programmatically before accepting logs.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="project-detail-card h-100">
+                        <div class="detail-heading">
+                            <i class="bi bi-database-fill-gear"></i>
+                            <span>Dataset & Model Training</span>
+                        </div>
+                        <p class="detail-text">
+                            We designed a streamlined, folder-based bulk import protocol that allows administrators to upload person 
+                            datasets containing multiple training images with a simple drag-and-drop mechanism. The system 
+                            automatically processes these images, updates database associations, and maps them to the recognition 
+                            pipeline, ensuring seamless integration of newly authorized personnel without downtime.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="project-detail-card h-100">
+                        <div class="detail-heading">
+                            <i class="bi bi-graph-up"></i>
+                            <span>Advanced Reports & Insights</span>
+                        </div>
+                        <p class="detail-text">
+                            Detection events are compiled into structured, searchable database tables with entry and exit 
+                            timestamps. The reports panel features a modern dashboard displaying metrics like total system 
+                            detections, known vs. unknown intrusions, and daily attendance aggregations. This data can be 
+                            filtered by dates or classification and exported directly to Microsoft Excel reports.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- ═══ TEAM ═══ -->
+        <section class="team-section animate-slide-up" id="team-section" style="animation-delay: 0.3s">
+            <div class="section-header">
+                <p class="section-eyebrow">The People Behind It</p>
+                <h2 class="section-title">Meet the Developers</h2>
+                <p class="section-desc">The core development team responsible for building the AI models, backend architecture, and front-end interface.</p>
+            </div>
+
+            <div class="row g-4 justify-content-center">
+                <!-- Om Joshi -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="dev-card">
+                        <div class="dev-img-container">
+                            <img src="{% static 'team/Om.jpeg' %}" alt="Om Joshi">
+                        </div>
+                        <div class="dev-overlay">
+                            <div class="dev-info">
+                                <div class="dev-name">Om Joshi</div>
+                                <div class="dev-socials">
+                                    <a href="#" class="social-btn linkedin" aria-label="LinkedIn"><i class="bi bi-linkedin"></i></a>
+                                    <a href="#" class="social-btn github" aria-label="GitHub"><i class="bi bi-github"></i></a>
+                                    <a href="#" class="social-btn instagram" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Harsh Shrimali -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="dev-card">
+                        <div class="dev-img-container">
+                            <img src="{% static 'team/Harsh.png' %}" alt="Harsh Shrimali">
+                        </div>
+                        <div class="dev-overlay">
+                            <div class="dev-info">
+                                <div class="dev-name">Harsh Shrimali</div>
+                                <div class="dev-socials">
+                                    <a href="#" class="social-btn linkedin" aria-label="LinkedIn"><i class="bi bi-linkedin"></i></a>
+                                    <a href="#" class="social-btn github" aria-label="GitHub"><i class="bi bi-github"></i></a>
+                                    <a href="#" class="social-btn instagram" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nirav Vanol -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="dev-card">
+                        <div class="dev-img-container">
+                            <img src="{% static 'team/Nirav.jpeg' %}" alt="Nirav Vanol">
+                        </div>
+                        <div class="dev-overlay">
+                            <div class="dev-info">
+                                <div class="dev-name">Nirav Vanol</div>
+                                <div class="dev-socials">
+                                    <a href="#" class="social-btn linkedin" aria-label="LinkedIn"><i class="bi bi-linkedin"></i></a>
+                                    <a href="#" class="social-btn github" aria-label="GitHub"><i class="bi bi-github"></i></a>
+                                    <a href="#" class="social-btn instagram" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- ═══ TECHNOLOGY STACK ═══ -->
+        <section class="tech-stack-section animate-slide-up" style="animation-delay: 0.45s">
+            <div class="section-header">
+                <p class="section-eyebrow">Technology</p>
+                <h2 class="section-title">Built With</h2>
+                <p class="section-desc">The core libraries, database layers, frameworks, and deep learning architectures that power this platform.</p>
+            </div>
+
+            <div class="tech-grid">
+                <!-- YOLOv8 -->
+                <div class="tech-card">
+                    <div class="tech-icon"><i class="bi bi-gpu-card"></i></div>
+                    <div class="tech-name">YOLOv8</div>
+                    <div class="tech-use">Deep Learning Inference</div>
+                </div>
+                <!-- Python -->
+                <div class="tech-card">
+                    <div class="tech-icon"><i class="bi bi-filetype-py"></i></div>
+                    <div class="tech-name">Python</div>
+                    <div class="tech-use">Core System Logic</div>
+                </div>
+                <!-- Django -->
+                <div class="tech-card">
+                    <div class="tech-icon"><i class="bi bi-hdd-rack-fill"></i></div>
+                    <div class="tech-name">Django</div>
+                    <div class="tech-use">Web Server & Auth</div>
+                </div>
+                <!-- OpenCV -->
+                <div class="tech-card">
+                    <div class="tech-icon"><i class="bi bi-camera-video-fill"></i></div>
+                    <div class="tech-name">OpenCV</div>
+                    <div class="tech-use">Frame Ingestion Layer</div>
+                </div>
+                <!-- Bootstrap 5 -->
+                <div class="tech-card">
+                    <div class="tech-icon"><i class="bi bi-bootstrap-fill"></i></div>
+                    <div class="tech-name">Bootstrap 5</div>
+                    <div class="tech-use">Front-End System</div>
+                </div>
+                <!-- SQLite -->
+                <div class="tech-card">
+                    <div class="tech-icon"><i class="bi bi-database-fill"></i></div>
+                    <div class="tech-name">SQLite</div>
+                    <div class="tech-use">Persistent Logs & Datasets</div>
+                </div>
+                <!-- Chart.js -->
+                <div class="tech-card">
+                    <div class="tech-icon"><i class="bi bi-bar-chart-fill"></i></div>
+                    <div class="tech-name">Chart.js</div>
+                    <div class="tech-use">Analytics Dashboards</div>
+                </div>
+                <!-- Microsoft Excel API -->
+                <div class="tech-card">
+                    <div class="tech-icon"><i class="bi bi-file-earmark-excel-fill"></i></div>
+                    <div class="tech-name">Excel Export</div>
+                    <div class="tech-use">Report Exports</div>
+                </div>
+                <!-- Custom CSS3 -->
+                <div class="tech-card">
+                    <div class="tech-icon"><i class="bi bi-filetype-css"></i></div>
+                    <div class="tech-name">Custom CSS3</div>
+                    <div class="tech-use">Styling & Animations</div>
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- ═══ PILLARS ═══ -->
+        <section class="pillar-section animate-slide-up" style="animation-delay: 0.6s">
+            <div class="row g-4 justify-content-center">
+                <!-- Pillar 1 -->
+                <div class="col-md-4">
+                    <div class="pillar-card">
+                        <div class="pillar-icon">
+                            <i class="bi bi-eye"></i>
+                        </div>
+                        <h3 class="pillar-title">Active Monitoring</h3>
+                        <p class="pillar-desc">
+                            Automatically flags events and anomalies in real-time, shifting surveillance from passive recording to active intelligence.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Pillar 2 -->
+                <div class="col-md-4">
+                    <div class="pillar-card">
+                        <div class="pillar-icon">
+                            <i class="bi bi-cpu"></i>
+                        </div>
+                        <h3 class="pillar-title">AI at the Core</h3>
+                        <p class="pillar-desc">
+                            Powered by YOLOv8 deep-learning models trained on diverse datasets for robust face and object detection accuracy.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Pillar 3 -->
+                <div class="col-md-4">
+                    <div class="pillar-card">
+                        <div class="pillar-icon">
+                            <i class="bi bi-shield-lock"></i>
+                        </div>
+                        <h3 class="pillar-title">Secure by Design</h3>
+                        <p class="pillar-desc">
+                            Role-based access, encrypted sessions, and a privacy-first architecture ensure your surveillance data stays protected.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+</div>
+{% endblock %}

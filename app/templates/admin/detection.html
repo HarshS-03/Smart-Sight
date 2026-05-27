@@ -1,0 +1,664 @@
+{% extends 'base.html' %}
+{% block title %}Live Detection{% endblock %}
+{% block content %}
+<style>
+  /* ── Page Hero ──────────────────────────────────────── */
+  .detection-hero {
+    position: relative;
+    padding-top: 4rem;
+    padding-bottom: 3rem;
+    overflow: hidden;
+  }
+
+  .detection-hero-bg-wrapper {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 50%, rgba(0, 0, 0, 0) 100%);
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 50%, rgba(0, 0, 0, 0) 100%);
+  }
+
+  .detection-hero-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 80% at 70% 20%, rgba(13, 110, 253, 0.14) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 50% at 5% 90%, rgba(16, 185, 129, 0.07) 0%, transparent 55%);
+    z-index: 0;
+  }
+
+  .detection-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .detection-orb-1 {
+    width: 400px;
+    height: 400px;
+    background: rgba(13, 110, 253, 0.13);
+    top: -80px;
+    right: 8%;
+    animation: orbPulse 7s ease-in-out infinite alternate;
+  }
+
+  @keyframes orbPulse {
+    from {
+      opacity: .6;
+      transform: scale(1);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+  }
+
+  .detect-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 14px 5px 8px;
+    background: rgba(13, 110, 253, 0.12);
+    border: 1px solid rgba(13, 110, 253, 0.28);
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: #60a5fa;
+    margin-bottom: 1.2rem;
+  }
+
+  .detect-eyebrow .live-dot {
+    width: 8px;
+    height: 8px;
+    background: #3b82f6;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(59, 130, 246, .8);
+    animation: blink 2s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: .3;
+    }
+  }
+
+  .detect-title {
+    font-size: clamp(2.2rem, 5vw, 4rem);
+    font-weight: 900;
+    letter-spacing: -.02em;
+    color: #fff;
+    line-height: 1.1;
+  }
+
+  .detect-title .accent {
+    background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── Video Panel ──────────────────────────────────── */
+  .video-panel {
+    background: rgba(15, 23, 42, 0.97);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 28px;
+    padding: 28px;
+    backdrop-filter: blur(24px);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+  }
+
+  #video-feed-container {
+    aspect-ratio: 16/9;
+    background: #000;
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    position: relative;
+    transition: border-color 0.4s ease, box-shadow 0.4s ease;
+  }
+
+  #video-feed-container.feed-active {
+    border-color: rgba(34, 197, 94, 0.5);
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.2), 0 0 40px rgba(34, 197, 94, 0.1), inset 0 0 30px rgba(0, 0, 0, 0.4);
+    animation: feedGlow 3s ease-in-out infinite;
+  }
+
+  @keyframes feedGlow {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.2), 0 0 40px rgba(34, 197, 94, 0.1), inset 0 0 30px rgba(0,0,0,0.4); }
+    50%       { box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.35), 0 0 60px rgba(34, 197, 94, 0.18), inset 0 0 30px rgba(0,0,0,0.4); }
+  }
+
+  @media(max-width:576px) {
+    #video-feed-container {
+      aspect-ratio: 4/5;
+    }
+  }
+
+  /* HUD corners on the video */
+  .vid-hud-corner {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-color: rgba(59, 130, 246, .7);
+    border-style: solid;
+    pointer-events: none;
+  }
+
+  .vid-hud-tl {
+    top: 14px;
+    left: 14px;
+    border-width: 2px 0 0 2px;
+    border-radius: 4px 0 0 0;
+  }
+
+  .vid-hud-tr {
+    top: 14px;
+    right: 14px;
+    border-width: 2px 2px 0 0;
+    border-radius: 0 4px 0 0;
+  }
+
+  .vid-hud-bl {
+    bottom: 14px;
+    left: 14px;
+    border-width: 0 0 2px 2px;
+    border-radius: 0 0 0 4px;
+  }
+
+  .vid-hud-br {
+    bottom: 14px;
+    right: 14px;
+    border-width: 0 2px 2px 0;
+    border-radius: 0 0 4px 0;
+  }
+
+  /* custom dropdown */
+  .form-select:focus,
+  .form-control:focus {
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    box-shadow: none !important;
+    z-index: 1;
+  }
+
+  .custom-dropdown {
+    position: relative;
+    cursor: pointer;
+    min-width: 180px;
+  }
+
+  .dropdown-selected {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+    transition: all .3s ease;
+  }
+
+  .dropdown-selected:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .dropdown-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: rgba(10, 15, 28, .92);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    margin-top: 6px;
+    display: none;
+    z-index: 1000;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, .6);
+  }
+
+  .dropdown-option {
+    padding: 11px 16px;
+    transition: all .2s ease;
+    color: rgba(255, 255, 255, .6);
+    border-bottom: 1px solid rgba(255, 255, 255, .03);
+    font-size: .92rem;
+  }
+
+  .dropdown-option:last-child {
+    border-bottom: none;
+  }
+
+  .dropdown-option:hover {
+    background: rgba(255, 255, 255, .08);
+    color: #fff;
+  }
+
+  .dropdown-option.active {
+    background: rgba(13, 110, 253, .1);
+    color: #60a5fa;
+    font-weight: 600;
+  }
+
+  /* HUD cards */
+  .hud-card {
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 14px 18px;
+    transition: all .3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hud-card::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -60%;
+    width: 60%;
+    height: 200%;
+    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.04) 50%, transparent 60%);
+    transform: skewX(-10deg);
+    transition: left 0.5s ease;
+    pointer-events: none;
+  }
+
+  .hud-card:hover::after {
+    left: 130%;
+  }
+
+  .hud-card:hover {
+    border-color: rgba(59, 130, 246, .35);
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.08);
+  }
+
+  .hud-label {
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: rgba(255, 255, 255, .4);
+    margin-bottom: 4px;
+  }
+
+  /* Action buttons */
+  .btn-detect-start {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    border: none;
+    border-radius: 999px;
+    padding: 14px 32px;
+    font-weight: 800;
+    font-size: .9rem;
+    color: #fff;
+    box-shadow: 0 6px 24px rgba(37, 99, 235, .4);
+    transition: all .35s cubic-bezier(.25, .8, .25, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-detect-start:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 12px 36px rgba(37, 99, 235, .55);
+    color: #fff;
+  }
+
+  .btn-detect-stop {
+    background: rgba(255, 255, 255, .04);
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 999px;
+    padding: 13px 28px;
+    font-weight: 700;
+    font-size: .9rem;
+    color: rgba(255, 255, 255, .7);
+    backdrop-filter: blur(8px);
+    transition: all .3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-detect-stop:hover {
+    background: rgba(220, 53, 69, .1);
+    border-color: rgba(220, 53, 69, .4);
+    color: #f87171;
+    transform: translateY(-1px);
+  }
+</style>
+
+<!-- ── Page Hero ────────────────────────────────────────── -->
+<section class="detection-hero">
+  <div class="detection-hero-bg-wrapper">
+    <div class="detection-hero-bg"></div>
+    <div class="detection-orb detection-orb-1"></div>
+  </div>
+
+  <div class="container position-relative" style="z-index:2;">
+    <div class="row justify-content-center text-center mb-4">
+      <div class="col-lg-7">
+        <h1 class="detect-title mb-3" data-reveal>
+          Live <span class="accent">Detection</span>
+        </h1>
+        <p style="font-size:1rem;color:rgba(255,255,255,.5);line-height:1.8;max-width:480px;margin:0 auto;" data-reveal data-reveal-delay="120">
+          AI-powered YOLOv8 face detection on a live video stream. Start your feed and monitor in real-time.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Detection Console ─────────────────────────────────── -->
+<div class="container pb-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="video-panel" data-reveal data-reveal-delay="80">
+
+        <!-- Video feed -->
+        <div id="video-feed-container" class="mb-4 d-flex align-items-center justify-content-center">
+          <!-- HUD Corners -->
+          <div class="vid-hud-corner vid-hud-tl"></div>
+          <div class="vid-hud-corner vid-hud-tr"></div>
+          <div class="vid-hud-corner vid-hud-bl"></div>
+          <div class="vid-hud-corner vid-hud-br"></div>
+
+          <!-- Offline placeholder -->
+          <div id="offline-state" class="text-center text-secondary">
+            <i class="bi bi-camera-video-off display-4 mb-3 d-block" style="opacity:.35;"></i>
+            <h5 class="fw-bold text-white mb-1">Camera Offline</h5>
+            <p class="small text-muted mb-0">Click <strong>Start Feed</strong> to begin monitoring.</p>
+          </div>
+          <img id="live-feed" src="" alt="Live Feed" class="w-100 h-100" style="object-fit:contain;display:none;">
+        </div>
+
+        <!-- Selectors Row (Side by Side) -->
+        <div class="row mb-4 justify-content-center g-4">
+          <!-- Camera Source Column -->
+          <div class="col-md-6">
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <span class="hud-label" style="margin:0;">Camera Source</span>
+            </div>
+            <div id="camera-input-group" class="d-flex gap-2">
+              <span class="d-none d-sm-flex align-items-center px-3 rounded-3 text-secondary"
+                style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);white-space:nowrap;font-size:.85rem;">
+                <i class="bi bi-camera me-2"></i> Source
+              </span>
+
+              <!-- Dropdown -->
+              <div class="custom-dropdown flex-grow-1" id="camera-dropdown">
+                <div class="dropdown-selected d-flex align-items-center justify-content-between px-3 text-white"
+                  id="dropdown-display" style="min-height:48px;">
+                  <span class="text-truncate me-2">Default Webcam</span>
+                  <i class="bi bi-chevron-down small opacity-50 flex-shrink-0"></i>
+                </div>
+                <div class="dropdown-options" id="dropdown-items">
+                  <div class="dropdown-option active" data-value="0">Default Webcam</div>
+                  <div class="dropdown-option" data-value="url">IP Camera (URL)</div>
+                </div>
+                <input type="hidden" id="camera-type" value="0">
+              </div>
+            </div>
+          </div>
+
+          <!-- YOLO Model Column -->
+          <div class="col-md-6">
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <span class="hud-label" style="margin:0;">YOLO Model</span>
+            </div>
+            <div id="model-input-group" class="d-flex gap-2">
+              <span class="d-none d-sm-flex align-items-center px-3 rounded-3 text-secondary"
+                style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);white-space:nowrap;font-size:.85rem;">
+                <i class="bi bi-cpu me-2"></i> Model
+              </span>
+              <div class="custom-dropdown flex-grow-1" id="model-dropdown">
+                <div class="dropdown-selected d-flex align-items-center justify-content-between px-3 text-white"
+                  id="model-dropdown-display" style="min-height:48px;">
+                  <span class="text-truncate me-2">YOLOv8 Nano (ONNX)</span>
+                  <i class="bi bi-chevron-down small opacity-50 flex-shrink-0"></i>
+                </div>
+                <div class="dropdown-options" id="model-dropdown-items">
+                  <div class="dropdown-option active" data-value="yolov8n_onnx">YOLOv8 Nano (ONNX)</div>
+                  <div class="dropdown-option" data-value="yolov8n_pt">YOLOv8 Nano (PyTorch)</div>
+                  <div class="dropdown-option" data-value="yolov8s_onnx">YOLOv8 Small (ONNX)</div>
+                  <div class="dropdown-option" data-value="yolov8s">YOLOv8 Small (PyTorch)</div>
+                </div>
+                <input type="hidden" id="model-type" value="yolov8n_onnx">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- IP Camera URL Section -->
+        <div class="row mb-4 justify-content-center" id="url-input-container" style="display:none !important;">
+          <div class="col-12">
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <span class="hud-label" style="margin:0;">IP Camera URL</span>
+            </div>
+            <div class="d-flex gap-2">
+              <span class="d-none d-sm-flex align-items-center px-3 rounded-3 text-secondary"
+                style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);white-space:nowrap;font-size:.85rem;">
+                <i class="bi bi-link-45deg me-2"></i> URL
+              </span>
+              <input type="text" id="camera-url" class="form-control text-white shadow-none rounded-3 flex-grow-1"
+                placeholder="Enter IP Camera URL (e.g. http://192.168.1.100:8080/video)"
+                style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);height:48px;">
+            </div>
+          </div>
+        </div>
+
+        <!-- HUD stats -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-4" data-reveal data-reveal-delay="0">
+            <div class="hud-card">
+              <div class="hud-label">Status</div>
+              <div class="d-flex align-items-center gap-2">
+                <div id="status-dot" class="rounded-circle flex-shrink-0"
+                  style="width:10px;height:10px;background:#dc3545;box-shadow:0 0 8px rgba(220,53,69,.6);"></div>
+                <span id="status-text" class="fw-bold text-white">Offline</span>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4" data-reveal data-reveal-delay="100">
+            <div class="hud-card">
+              <div class="hud-label">Framerate</div>
+              <div class="fw-bold text-white" style="font-size:1.3rem;">
+                <span id="fps-counter">0</span>
+                <span class="text-secondary" style="font-size:.8rem;font-weight:600;margin-left:4px;">FPS</span>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4" data-reveal data-reveal-delay="200">
+            <div class="hud-card">
+              <div class="hud-label">Faces Detected</div>
+              <div id="faces-counter" class="fw-bold text-white" style="font-size:1.3rem;">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="d-flex justify-content-center gap-3">
+          <button id="btn-start" class="btn-detect-start">
+            <i class="bi bi-play-fill"></i> Start Feed
+          </button>
+          <button id="btn-stop" class="btn-detect-stop">
+            <i class="bi bi-stop-fill"></i> Stop Feed
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1055;">
+  <div id="detectionToast" class="toast shadow-lg" role="alert" aria-live="assertive" aria-atomic="true" style="background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(13, 110, 253, 0.4); backdrop-filter: blur(14px); border-radius: 12px; color: white;">
+    <div class="toast-header border-0" style="background: transparent; color: white;">
+      <i class="bi bi-person-bounding-box text-primary me-2 fs-5"></i>
+      <strong class="me-auto text-primary" style="font-size: 1.05rem;">Detection Alert</strong>
+      <small class="text-secondary ms-3" id="toast-time">Just now</small>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+    <div class="toast-body border-top" style="border-color: rgba(255,255,255,0.1) !important; font-size: 0.95rem;">
+      <span id="toast-message">A person has been detected in the live feed.</span>
+    </div>
+  </div>
+</div>
+
+<style>
+  #status-dot {
+    position: relative;
+  }
+  #status-dot.dot-active::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    background: rgba(34, 197, 94, 0.3);
+    animation: dotPulse 2s ease-in-out infinite;
+  }
+  @keyframes dotPulse {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50%       { transform: scale(1.6); opacity: 0; }
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const btnStart = document.getElementById('btn-start');
+    const btnStop = document.getElementById('btn-stop');
+    const liveFeed = document.getElementById('live-feed');
+    const offlineState = document.getElementById('offline-state');
+    const statusDot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const fpsCounter = document.getElementById('fps-counter');
+    const facesCounter = document.getElementById('faces-counter');
+    const cameraType = document.getElementById('camera-type');
+    const cameraUrl = document.getElementById('camera-url');
+    const dropdownDisplay = document.getElementById('dropdown-display');
+    const dropdownOptions = document.getElementById('dropdown-items');
+    const dropdownItems = document.querySelectorAll('#dropdown-items .dropdown-option');
+    const urlInputContainer = document.getElementById('url-input-container');
+
+    const modelType = document.getElementById('model-type');
+    const modelDropdownDisplay = document.getElementById('model-dropdown-display');
+    const modelDropdownOptions = document.getElementById('model-dropdown-items');
+    const modelDropdownItems = document.querySelectorAll('#model-dropdown-items .dropdown-option');
+
+    let statsInterval = null;
+
+    dropdownDisplay.addEventListener('click', function (e) {
+      e.stopPropagation();
+      dropdownOptions.style.display = dropdownOptions.style.display === 'block' ? 'none' : 'block';
+      modelDropdownOptions.style.display = 'none';
+    });
+
+    modelDropdownDisplay.addEventListener('click', function (e) {
+      e.stopPropagation();
+      modelDropdownOptions.style.display = modelDropdownOptions.style.display === 'block' ? 'none' : 'block';
+      dropdownOptions.style.display = 'none';
+    });
+
+    document.addEventListener('click', function () {
+      dropdownOptions.style.display = 'none';
+      modelDropdownOptions.style.display = 'none';
+    });
+
+    dropdownItems.forEach(item => {
+      item.addEventListener('click', function () {
+        const value = this.getAttribute('data-value');
+        cameraType.value = value;
+        dropdownDisplay.querySelector('span').innerText = this.innerText;
+        dropdownItems.forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+        urlInputContainer.style.setProperty('display', value === 'url' ? 'flex' : 'none', 'important');
+      });
+    });
+
+    modelDropdownItems.forEach(item => {
+      item.addEventListener('click', function () {
+        const value = this.getAttribute('data-value');
+        modelType.value = value;
+        modelDropdownDisplay.querySelector('span').innerText = this.innerText;
+        modelDropdownItems.forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Hot-reload camera feed on model change
+        if (liveFeed.src && liveFeed.style.display !== 'none') {
+          let src = '0';
+          if (cameraType.value === 'url') {
+            src = cameraUrl.value.trim();
+          }
+          liveFeed.src = "{% url 'video_feed' %}?src=" + encodeURIComponent(src) + "&model=" + encodeURIComponent(modelType.value);
+        }
+      });
+    });
+
+    let previousFaces = 0;
+
+    function showToast(message) {
+      const toastEl = document.getElementById('detectionToast');
+      if (toastEl && window.bootstrap) {
+        document.getElementById('toast-message').innerText = message;
+        document.getElementById('toast-time').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+        const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+        toast.show();
+      }
+    }
+
+    function fetchStats() {
+      fetch("{% url 'video_stats' %}?t=" + new Date().getTime())
+        .then(r => r.json())
+        .then(data => { 
+          fpsCounter.innerText = data.fps; 
+          facesCounter.innerText = data.faces; 
+          
+          if (data.faces > 0 && previousFaces === 0) {
+            showToast("Motion detected: Person entered the frame.");
+          }
+          previousFaces = data.faces;
+        })
+        .catch(err => console.error("Stats error:", err));
+    }
+
+    btnStart.addEventListener('click', function () {
+      let src = '0';
+      if (cameraType.value === 'url') {
+        src = cameraUrl.value.trim();
+        if (!src) { alert("Please enter a valid IP Camera URL."); return; }
+      }
+      liveFeed.src = "{% url 'video_feed' %}?src=" + encodeURIComponent(src) + "&model=" + encodeURIComponent(modelType.value);
+      liveFeed.style.display = 'block';
+      offlineState.style.display = 'none';
+      document.getElementById('video-feed-container').classList.add('feed-active');
+      statusDot.style.background = '#22c55e';
+      statusDot.style.boxShadow = '0 0 8px rgba(34,197,94,.8)';
+      statusDot.classList.add('dot-active');
+      statusText.innerText = 'Online';
+      if (!statsInterval) statsInterval = setInterval(fetchStats, 1000);
+    });
+
+    btnStop.addEventListener('click', function () {
+      liveFeed.src = "";
+      liveFeed.style.display = 'none';
+      offlineState.style.display = 'block';
+      document.getElementById('video-feed-container').classList.remove('feed-active');
+      statusDot.style.background = '#dc3545';
+      statusDot.style.boxShadow = '0 0 8px rgba(220,53,69,.6)';
+      statusDot.classList.remove('dot-active');
+      statusText.innerText = 'Offline';
+      if (statsInterval) { clearInterval(statsInterval); statsInterval = null; }
+      fpsCounter.innerText = '0';
+      facesCounter.innerText = '0';
+    });
+  });
+</script>
+{% endblock %}
