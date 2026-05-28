@@ -218,6 +218,46 @@
     opacity: 1;
     pointer-events: auto;
   }
+
+  /* ── AI Auto-Classification Styles ──────────────── */
+  .classify-group-card {
+    background: rgba(30, 41, 59, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 16px;
+    transition: all 0.3s ease;
+  }
+
+  .classify-group-card:hover {
+    border-color: rgba(37, 99, 235, 0.3) !important;
+    background: rgba(30, 41, 59, 0.6) !important;
+  }
+
+  .classify-thumb {
+    width: 70px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.2s ease;
+  }
+  
+  .classify-thumb:hover {
+    transform: scale(1.1);
+  }
+
+  .pulse-loader {
+    display: inline-block;
+    width: 65px;
+    height: 65px;
+    border: 4px solid rgba(37, 99, 235, 0.1);
+    border-radius: 50%;
+    border-top-color: #2563eb;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 </style>
 
 <!-- Dataset Hero -->
@@ -459,6 +499,20 @@
 
   <!-- Unknown Captures View Container -->
   <div id="unknown-captures-view" style="display: none;">
+    <!-- Premium Auto-Classify Trigger Banner -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4 mb-4 p-4 rounded-4" 
+         style="background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(6, 180, 212, 0.04) 100%); border: 1px solid rgba(255, 255, 255, 0.06); backdrop-filter: blur(12px);">
+      <div>
+        <h5 class="fw-bold text-white mb-1 d-flex align-items-center gap-2">
+          <i class="bi bi-cpu text-primary"></i> AI Auto-Classification Engine
+        </h5>
+        <p class="text-secondary small mb-0" style="max-width: 580px;">Automatically cluster all unrecognized surveillance captures using DeepFace & DBSCAN. Group same-person captures to name and register them to your dataset instantly.</p>
+      </div>
+      <button type="button" class="btn-ds-primary flex-shrink-0" onclick="startAutoClassification()">
+        <i class="bi bi-magic"></i> Auto-Classify Faces
+      </button>
+    </div>
+
     {% if unknowns_by_date %}
       <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
         {% for date_str, group in unknowns_by_date.items %}
@@ -682,6 +736,88 @@
   }
 </style>
 
+<!-- Datalist for existing names suggestions -->
+<datalist id="existing-names">
+  {% for person in persons %}
+  <option value="{{ person.name }}"></option>
+  {% endfor %}
+</datalist>
+
+<!-- Auto Classification Results Modal -->
+<div class="modal fade" id="autoClassifyModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content overflow-hidden"
+      style="background: rgba(15, 23, 42, 0.98); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);">
+      <div class="modal-header border-0 p-4">
+        <h5 class="modal-title fw-bold text-white d-flex align-items-center">
+          <i class="bi bi-cpu-fill text-primary me-2"></i>
+          AI Face Auto-Classification
+        </h5>
+        <button type="button" class="btn-close btn-close-white opacity-50" data-bs-dismiss="modal" onclick="handleClassificationModalClose()" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4 pt-0">
+        
+        <!-- Loading State -->
+        <div id="classify-loading" class="text-center py-5">
+          <style>
+            .ai-scanner-container {
+              position: relative;
+              width: 120px;
+              height: 120px;
+              margin: 0 auto 2rem;
+              border-radius: 20px;
+              background: rgba(15, 23, 42, 0.5);
+              border: 2px solid rgba(37, 99, 235, 0.2);
+              overflow: hidden;
+              box-shadow: 0 0 30px rgba(37, 99, 235, 0.15);
+            }
+            .ai-scanner-face {
+              position: absolute;
+              inset: 15px;
+              border: 2px dashed rgba(37, 99, 235, 0.4);
+              border-radius: 12px;
+            }
+            .ai-scanner-face::before, .ai-scanner-face::after {
+              content: ''; position: absolute; width: 15px; height: 15px; border-color: #3b82f6; border-style: solid;
+            }
+            .ai-scanner-face::before { top: -2px; left: -2px; border-width: 2px 0 0 2px; }
+            .ai-scanner-face::after { bottom: -2px; right: -2px; border-width: 0 2px 2px 0; }
+            .ai-scanner-line {
+              position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: #06b6d4;
+              box-shadow: 0 0 15px 3px rgba(6, 182, 212, 0.6);
+              animation: scan 2s cubic-bezier(0.53, 0.21, 0.29, 0.67) infinite alternate;
+            }
+            @keyframes scan { 0% { top: 0%; opacity: 0.5; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0.5; } }
+            .ai-status-text { font-family: monospace; color: #06b6d4; font-size: 0.85rem; letter-spacing: 1px; }
+            .typing-dots::after {
+              content: '...'; animation: typing 1.5s infinite steps(4, end); display: inline-block; width: 20px; text-align: left;
+            }
+            @keyframes typing { 0%, 20% { content: ''; } 40% { content: '.'; } 60% { content: '..'; } 80%, 100% { content: '...'; } }
+          </style>
+          
+          <div class="ai-scanner-container">
+            <div class="ai-scanner-face"></div>
+            <div class="ai-scanner-line"></div>
+          </div>
+          <h5 class="text-white fw-bold mb-2">ArcFace Neural Engine Active</h5>
+          <div class="ai-status-text mb-3">COMPUTING BIOMETRIC EMBEDDINGS<span class="typing-dots"></span></div>
+          <p class="text-secondary small mx-auto" style="max-width: 380px; line-height: 1.6;">
+            Extracting 512-d facial features and clustering via DBSCAN. This process separates distinct individuals into highly accurate identification groups.
+          </p>
+        </div>
+
+        <!-- Results State -->
+        <div id="classify-results" class="d-none">
+          <div id="groups-container" class="d-flex flex-column gap-3">
+            <!-- Dynamically injected groups -->
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     const dropZone = document.getElementById('dropZone');
@@ -875,6 +1011,181 @@
           img.classList.remove('ds-lazy');
         }
       });
+    }
+  }
+
+  // ── AI Face Auto-Classification Scripts ───────────
+  let autoClassifyModal;
+  let classifiedGroupsChanged = false;
+
+  function startAutoClassification() {
+    if (!autoClassifyModal) {
+      autoClassifyModal = new bootstrap.Modal(document.getElementById('autoClassifyModal'));
+    }
+    
+    classifiedGroupsChanged = false;
+    document.getElementById('classify-loading').classList.remove('d-none');
+    document.getElementById('classify-results').classList.add('d-none');
+    document.getElementById('groups-container').innerHTML = '';
+    
+    autoClassifyModal.show();
+    
+    fetch('{% url "classify_unknowns" %}', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('classify-loading').classList.add('d-none');
+      document.getElementById('classify-results').classList.remove('d-none');
+      
+      if (data.status === 'success') {
+        renderClassifiedGroups(data.groups);
+      } else {
+        document.getElementById('groups-container').innerHTML = `
+          <div class="alert alert-danger border-0 rounded-4" style="background: rgba(220, 53, 69, 0.1); color: #f87171; font-size: 0.9rem;">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> ${data.message || 'Error occurred.'}
+          </div>
+        `;
+      }
+    })
+    .catch(error => {
+      document.getElementById('classify-loading').classList.add('d-none');
+      document.getElementById('classify-results').classList.remove('d-none');
+      document.getElementById('groups-container').innerHTML = `
+        <div class="alert alert-danger border-0 rounded-4" style="background: rgba(220, 53, 69, 0.1); color: #f87171; font-size: 0.9rem;">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i> Network error or server processing timed out.
+        </div>
+      `;
+    });
+  }
+
+  function renderClassifiedGroups(groups) {
+    const container = document.getElementById('groups-container');
+    container.innerHTML = '';
+    
+    if (!groups || groups.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-5 opacity-50">
+          <i class="bi bi-emoji-smile display-4 mb-3 text-secondary"></i>
+          <h5>No unrecognized faces to classify.</h5>
+        </div>
+      `;
+      return;
+    }
+    
+    groups.forEach((group, index) => {
+      const card = document.createElement('div');
+      card.className = 'classify-group-card p-3 d-flex flex-column gap-3';
+      card.id = `group-card-${group.id}`;
+      
+      let title = '';
+      let badge = '';
+      if (group.is_noface) {
+        title = 'No Face Detected';
+        badge = '<span class="badge bg-secondary">Unrecognized Shapes</span>';
+      } else if (group.is_cluster) {
+        title = `Face Group #${index + 1}`;
+        badge = `<span class="badge bg-primary">${group.count} Match captures</span>`;
+      } else {
+        title = 'Single Stranger Capture';
+        badge = '<span class="badge bg-danger">Singleton outlier</span>';
+      }
+      
+      let thumbsHtml = '';
+      group.images.forEach(img => {
+        thumbsHtml += `
+          <div class="position-relative">
+            <img src="${img.url}" class="classify-thumb" alt="Face thumb">
+          </div>
+        `;
+      });
+      
+      card.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center">
+          <h6 class="fw-bold text-white mb-0 d-flex align-items-center gap-2">
+            <i class="bi bi-person-bounding-box text-primary"></i> ${title}
+          </h6>
+          ${badge}
+        </div>
+        
+        <div class="d-flex flex-wrap gap-2 py-1">
+          ${thumbsHtml}
+        </div>
+        
+        <div class="d-flex gap-2">
+          <input type="text" id="input-${group.id}" class="form-control text-white bg-dark border-secondary border-opacity-25 rounded-pill px-3 py-2 text-capitalize" placeholder="Enter person name..." list="existing-names" style="font-size: 0.85rem;">
+          <button type="button" class="btn btn-primary rounded-pill px-4" onclick="assignGroup('${group.id}', ${JSON.stringify(group.images.map(img => img.filename))})">
+            <i class="bi bi-check-circle"></i> Register
+          </button>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function assignGroup(groupId, filenames) {
+    const inputElement = document.getElementById(`input-${groupId}`);
+    const name = inputElement.value.trim();
+    
+    if (!name) {
+      alert('Please enter a name for the person.');
+      return;
+    }
+    
+    const card = document.getElementById(`group-card-${groupId}`);
+    const button = card.querySelector('button');
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+    
+    fetch('{% url "assign_classified_group" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({
+        group_images: filenames,
+        person_name: name
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success') {
+        classifiedGroupsChanged = true;
+        
+        card.style.transition = 'all 0.5s ease';
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+          card.remove();
+          
+          const remainingCards = document.querySelectorAll('.classify-group-card');
+          if (remainingCards.length === 0) {
+            handleClassificationModalClose();
+          }
+        }, 500);
+      } else {
+        button.disabled = false;
+        button.innerHTML = originalText;
+        alert(data.message || 'Error occurred.');
+      }
+    })
+    .catch(error => {
+      button.disabled = false;
+      button.innerHTML = originalText;
+      alert('Network error, please try again.');
+    });
+  }
+
+  function handleClassificationModalClose() {
+    if (classifiedGroupsChanged) {
+      window.location.reload();
     }
   }
 </script>

@@ -9,3 +9,5 @@ Pillow>=10.0.0
 numpy>=1.23.0
 onnx>=1.14.0
 onnxruntime>=1.15.0
+deepface>=0.0.93
+scikit-learn>=1.3.0

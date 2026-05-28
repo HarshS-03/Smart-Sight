@@ -1,4 +1,4 @@
-from django.utils import timezone
+﻿from django.utils import timezone
 from datetime import timedelta, datetime
 from django.http import StreamingHttpResponse, JsonResponse, HttpResponse
 import time
@@ -158,6 +158,41 @@ def delete_image(request, image_id):
     image.delete()
     messages.success(request, "Training sample removed successfully.")
     return redirect('dataset')
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def classify_unknowns(request):
+    if request.method == 'POST':
+        try:
+            from app.face_classifier import classify_unknown_faces
+            groups = classify_unknown_faces()
+            return JsonResponse({'status': 'success', 'groups': groups})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Only POST method is allowed'}, status=405)
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def assign_classified_group(request):
+    if request.method == 'POST':
+        try:
+            from app.face_classifier import assign_group_to_person
+            import json
+            data = json.loads(request.body)
+            group_images = data.get('group_images', [])
+            person_name = data.get('person_name', '')
+            
+            if not group_images or not person_name:
+                return JsonResponse({'status': 'error', 'message': 'Missing group images or person name.'}, status=400)
+                
+            success, msg = assign_group_to_person(group_images, person_name)
+            if success:
+                return JsonResponse({'status': 'success', 'message': msg})
+            else:
+                return JsonResponse({'status': 'error', 'message': msg}, status=400)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Only POST method is allowed'}, status=405)
 
 def login_user(request):
     if not request.session.session_key:

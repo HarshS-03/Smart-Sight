@@ -12,6 +12,7 @@ This handbook contains a highly exhaustive, professional collection of **probabl
 5. [Asynchronous Infrastructure & Notification Pipelines (Threads, SMTP, Telegram)](#-5-asynchronous-infrastructure--notification-pipelines-threads-smtp-telegram)
 6. [Biometrics, Security, Anti-Spoofing & Enterprise Scaling](#-6-biometrics-security-anti-spoofing--enterprise-scaling)
 7. [Academic & Software Engineering Methodology](#-7-academic--software-engineering-methodology)
+8. [AI Face Auto-Classification, ArcFace & Density-Based Clustering (DBSCAN)](#-8-ai-face-auto-classification-arcface--density-based-clustering-dbscan)
 
 ---
 
@@ -87,7 +88,7 @@ This handbook contains a highly exhaustive, professional collection of **probabl
 * **Short Answer:** 
   The analytics reporting system processes thousands of individual raw records into aggregated daily entries. It calculates the initial entry time, the final exit time, detection frequency, and maximum matching confidence for each person per day using Django's ORM database aggregation queries.
 * **In-Depth Technical Detail:** 
-  * In [views.py](file:///s:/Surveillance/app/views.py#L467-L476), we group logs dynamically by extracting the calendar date and performing SQL aggregates:
+  * In [views.py](file:///s:/Smart%20Sight/app/views.py#L1049-L1054), we group logs dynamically by extracting the calendar date and performing SQL aggregates:
     ```python
     from django.db.models.functions import TruncDate
     from django.db.models import Count, Min, Max
@@ -105,7 +106,7 @@ This handbook contains a highly exhaustive, professional collection of **probabl
 * **Short Answer:** 
   The backend implements a two-factor verification pathway. To recover a forgotten password, the system verifies a pre-configured, secure alphanumeric code mapped to the user profile. If verified, the user is authorized to securely set their new password.
 * **In-Depth Technical Detail:** 
-  * In [views.py](file:///s:/Surveillance/app/views.py#L140-L163), the password reset view queries the database for a matching `username` and custom security `code`:
+  * In [views.py](file:///s:/Smart%20Sight/app/views.py#L393-L396), the password reset view queries the database for a matching `username` and custom security `code`:
     ```python
     user = User.objects.get(username=username, code=code)
     ```
@@ -115,7 +116,7 @@ This handbook contains a highly exhaustive, professional collection of **probabl
 * **Short Answer:** 
   Django's database ORM's default cascade deletes the *metadata row* from the SQLite database but leaves the *actual physical file* sitting on the hard drive. To prevent media storage leaks, the application manually scans and deletes the physical files from the hard disk using Python's `os.remove` utility before executing the database delete command.
 * **In-Depth Technical Detail:** 
-  * In [views.py](file:///s:/Surveillance/app/views.py#L92-L103), when `delete_person` is triggered, the code loops through the file paths of all associated images:
+  * In [views.py](file:///s:/Smart%20Sight/app/views.py#L136-L147), when `delete_person` is triggered, the code loops through the file paths of all associated images:
     ```python
     for img in person.images.all():
         if img.image and os.path.isfile(img.image.path):
@@ -168,7 +169,7 @@ This handbook contains a highly exhaustive, professional collection of **probabl
 * **Short Answer:** 
   Standard YOLOv8 models are trained on the COCO dataset, where index `0` represents a generic "person". Our custom-trained model has 22 custom classes representing specific human names (such as index `6` mapping to `Harsh`). To ensure alerts are processed correctly, the backend intercepts detections and maps all 22 custom model class outputs as valid human detections.
 * **In-Depth Technical Detail:** 
-  * In [views.py](file:///s:/Surveillance/app/views.py#L268-L294), the code checks if a custom model is active:
+  * In [views.py](file:///s:/Smart%20Sight/app/views.py#L514-L540), the code checks if a custom model is active:
     ```python
     is_custom = (model_name in ['yolov8n_onnx', 'yolov8n_pt', 'yolov8n'])
     ```
@@ -176,11 +177,10 @@ This handbook contains a highly exhaustive, professional collection of **probabl
     ```python
     if is_custom:
         if conf >= 0.65:
-            detected_names_set.add(model.names[cls_id])
+            box_name = model.names[cls_id]
         else:
-            detected_names_set.add('Unknown')
+            box_name = 'Unknown'
     ```
-  * This allows the system to identify both known authorized users by name and record strangers as "Unknown"!
 
 ### Q11. What is ONNX (`best.onnx`), and how does its optimization engine accelerate CPU-based edge inference by 300%?
 * **Short Answer:** 
@@ -197,43 +197,17 @@ This handbook contains a highly exhaustive, professional collection of **probabl
   * While the raw video frames are scaled to 640x480 for streaming efficiency, standard YOLOv8 requires a square input grid of `640x640`.
   * The model framework handles this internally: it rescales the frame, pads the borders to preserve the aspect ratio, converts the color space from BGR (OpenCV default) to RGB, and scales the matrix values by dividing by 255.0.
 
-### Q13. What are the key evaluation metrics used to judge the accuracy of your YOLOv8 model?
+### Q13. What do "best.pt" and "best.onnx" signify? What is the difference between PyTorch and ONNX models in your global loading dictionary cache?
 * **Short Answer:** 
-  Model accuracy is evaluated using **Precision** (how many detections are correct), **Recall** (how many real faces are found), and **mAP (mean Average Precision)**, which measures overall localization and classification accuracy across different confidence thresholds.
-* **In-Depth Technical Detail:** 
-  * **Precision:** $\frac{TP}{TP + FP}$ (Minimizes false alarms).
-  * **Recall:** $\frac{TP}{TP + FN}$ (Ensures no intruder is missed).
-  * **mAP@50:** The average precision evaluated at an Intersection over Union (IoU) threshold of 0.50. This measures how reliably the model detects faces.
-  * **mAP@50-95:** The most rigorous benchmark, averaging precision across a range of IoU thresholds from 0.50 to 0.95.
-
-### Q14. What is the difference between Anchor-based and Anchor-free object detection, and why does YOLOv8's Anchor-free design make it faster?
-* **Short Answer:** 
-  Older detectors (like YOLOv5) are **Anchor-based**, meaning they use predefined bounding box shapes and scan them across the image to find objects. YOLOv8 is **Anchor-free**; it directly predicts the center offset and bounding box boundaries for objects, avoiding the high computational cost of processing thousands of candidate boxes.
-* **In-Depth Technical Detail:** 
-  * Anchor-based models require manual tuning of anchor box dimensions prior to training. If objects have unusual aspect ratios, detection accuracy drops.
-  * YOLOv8's anchor-free design simplifies the network's output head. It regresses coordinates directly from the nearest feature map cell, which significantly reduces the execution time of post-processing steps like **Non-Maximum Suppression (NMS)**!
-
-### Q15. How do you handle deep learning model initialization latency on the first page load?
-* **Short Answer:** 
-  Loading a deep learning model file (which is tens of megabytes) into memory and initializing the computational graphs can take 2 to 5 seconds. To prevent this overhead from freezing the user interface during page loads, the system implements a **Global Caching Register**, loading models strictly on demand and keeping them cached in memory for subsequent requests.
-* **In-Depth Technical Detail:** 
-  * In [views.py](file:///s:/Surveillance/app/views.py#L21-L41), we define a global caching register `YOLO_MODELS`:
-    ```python
-    YOLO_MODELS = {}
-
-    def get_yolo_model(model_name):
-        if model_name not in YOLO_MODELS:
-            # ... Load model into dictionary ...
-            YOLO_MODELS[model_name] = YOLO(model_path)
-        return YOLO_MODELS[model_name]
-    ```
-  * By caching the loaded model object, subsequent frames bypass the disk read and model compilation steps entirely, enabling immediate and consistent real-time inference!
+  * `best.pt` represents the raw PyTorch weight parameters, containing the full dynamic neural graph loaded natively in Python.
+  * `best.onnx` is the compiled cross-platform computational graph.
+  * In [views.py](file:///s:/Smart%20Sight/app/views.py#L56-L59), we load the ONNX files by explicitly passing the `task='detect'` argument to the YOLO constructor because ONNX graphs lose their task-metadata headers during PyTorch exporting.
 
 ---
 
 ## 📹 3. OpenCV, Video Streaming & Network Capture Engineering
 
-### Q16. Explain the mechanism of real-time video streaming in Django. How does it bypass traditional HTTP request-response cycles?
+### Q14. Explain the mechanism of real-time video streaming in Django. How does it bypass traditional HTTP request-response cycles?
 * **Short Answer:** 
   Traditional web requests return a complete document and then close the connection. Smart Sight uses a **Server-Sent MJPEG stream** with a dynamic `StreamingHttpResponse`. The server keeps a single HTTP connection open and continuously pushes new JPEG frames over the socket using a special boundary format. The browser parses these boundaries and updates the image source dynamically.
 * **In-Depth Technical Detail:** 
@@ -245,86 +219,54 @@ This handbook contains a highly exhaustive, professional collection of **probabl
     ```
   * This keeps the connection open indefinitely, allowing processed frames to display immediately with minimal latency!
 
-### Q17. How does the server prevent network lag and stream freezing when reading from high-latency IP camera feeds?
+### Q15. How does the server prevent network lag and stream freezing when reading from high-latency IP camera feeds?
 * **Short Answer:** 
   By default, OpenCV buffers incoming frames. If the network experiences latency, this buffer accumulates frames, causing the displayed video feed to lag behind real time. The system prevents this by using a high-performance **FFMPEG backend** and setting the camera stream's buffer size strictly to **3**, forcing OpenCV to drop stale frames and process only the newest, real-time frames.
 * **In-Depth Technical Detail:** 
-  * In [views.py](file:///s:/Surveillance/app/views.py#L202-L213), the connection logic is optimized for remote feeds:
+  * In [views.py](file:///s:/Smart%20Sight/app/views.py#L449-L455), the connection logic is optimized for remote feeds:
     ```python
     cap = cv.VideoCapture(camera_src, cv.CAP_FFMPEG)
     cap.set(cv.CAP_PROP_BUFFERSIZE, 3)
     ```
   * Limiting the buffer size forces the system to discard older, unprocessed frames in the pipeline, ensuring the live stream remains highly responsive and free of artificial latency!
 
-### Q18. Why do you capture and process frames in 640x480 resolution instead of full HD (1080p)?
+### Q16. Why do you capture and process frames in 640x480 resolution instead of full HD (1080p)?
 * **Short Answer:** 
   Surveillance cameras often output video at High Definition (1080p or 4K). Processing a 1080p frame requires the neural network to evaluate **2,073,600 pixels** per frame. Downscaling the camera feed to **640x480** reduces the computational load to **307,200 pixels**—a 90% reduction—which dramatically accelerates model inference speed without affecting face recognition accuracy.
 * **In-Depth Technical Detail:** 
   * Processing high-resolution images on standard CPUs causes severe frame rate drops (down to 1–2 FPS), resulting in highly laggy video streams.
-  * In [views.py](file:///s:/Surveillance/app/views.py#L234-L236), the capture parameters are locked to standard resolution:
+  * In [views.py](file:///s:/Smart%20Sight/app/views.py#L480-L481), the capture parameters are locked to standard resolution:
     ```python
     cap.set(cv.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, 480)
     ```
   * Because the target face represents a relatively large portion of the frame, this resolution provides an optimal balance between low CPU inference latency and high recognition accuracy.
 
-### Q19. Walk me through the step-by-step OpenCV code used to draw bounding boxes and names on the active live feed.
+### Q17. Walk me through the step-by-step OpenCV code used to draw custom Bounding Boxes and Labels on identified faces.
 * **Short Answer:** 
-  OpenCV represents images as multi-dimensional NumPy arrays (height x width x color channels). Instead of manually drawing boxes and text using raw OpenCV operations, our backend utilizes YOLOv8's built-in plotting system, which draws high-performance bounding boxes, confidence labels, and class names directly onto the frame before rendering.
+  Rather than calling standard YOLOv8 `.plot()`, which draws generic, thick boxes, Smart Sight manually renders high-performance, translucent overlays and glowing sci-fi HUD frames using OpenCV matrices.
 * **In-Depth Technical Detail:** 
-  * In the main frame loop, after running the model on the current frame:
-    ```python
-    annotated_frame = results[0].plot()
-    ```
-  * This draws borders, colored labels, and matching names directly onto the frame.
-  * The annotated frame array is then converted into JPEG format and yielded to the browser:
-    ```python
-    ret, buffer = cv.imencode('.jpg', annotated_frame)
-    frame_bytes = buffer.tobytes()
-    ```
-
-### Q20. What is the purpose of the `_fix_camera_url` utility function in your backend?
-* **Short Answer:** 
-  This utility function acts as a robust input parser. It prevents common user input errors when connecting to IP cameras (such as using HTTPS for local subnets which blocks stream requests, or omitting URL subpaths), converting invalid inputs into valid, standard-compliant connection strings automatically.
-* **In-Depth Technical Detail:** 
-  * In [views.py](file:///s:/Surveillance/app/views.py#L169-L184), the parser applies two auto-correction rules:
-    1. **HTTPS to HTTP Protocol Downgrade:** Local IP camera modules often lack SSL certificates. Connecting to them via HTTPS will fail. The system automatically converts `https://192.168.x.x` to `http://192.168.x.x`.
-    2. **Endpoint Path Verification:** If the user enters a base IP camera address without a stream path, the parser automatically appends `/video` to establish a direct connection to the MJPEG broadcast endpoint.
-
-### Q21. How does the streaming generator handle a sudden, unexpected loss of camera connection?
-* **Short Answer:** 
-  If a camera disconnects or the network drops, standard OpenCV loops will crash, freezing the web application. Smart Sight catches frame capture failures instantly, stops the loop, and dynamically generates a custom red **"Stream Lost"** warning image in memory to notify the user.
-* **In-Depth Technical Detail:** 
-  * In [views.py](file:///s:/Surveillance/app/views.py#L247-L255), the frame loop continuously monitors the capture status:
-    ```python
-    success, frame = cap.read()
-    if not success:
-        error_frame = np.zeros((480, 640, 3), dtype=np.uint8)
-        cv.putText(error_frame, "Stream Lost", (200, 240), 
-                   cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv.LINE_AA)
-        ret, buffer = cv.imencode('.jpg', error_frame)
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-        break
-    ```
-  * This prevents the web application from crashing and provides clear visual feedback on the live dashboard during network interruptions!
+  * In [views.py](file:///s:/Smart%20Sight/app/views.py#L550-L576), we perform three visual rendering operations:
+    1. **Translucent Bounding Box Fill:** We create a frame copy (`overlay`), draw a solid filled rectangle inside the coordinates `(x1, y1)` and `(x2, y2)`, and merge it back using `cv.addWeighted` with an opacity alpha of `0.15`.
+    2. **Sci-Fi Corner Brackets:** Instead of drawing full border rectangles, we render small, thicker localized corner segments (using `cv.line`) matching the boundary colors.
+    3. **Compact Tag Overlay:** Draws a clean, solid background pill above the face and overlays the matching class name and confidence string via `cv.putText`.
 
 ---
 
 ## 🚨 4. Intelligent Decision Heuristics & Multi-Person Logic (Continuity & Cutoffs)
 
-### Q22. Explain the mathematical continuity logic behind the **3-Second Continuous Presence Debouncer**.
+### Q18. Explain the mathematical continuity logic behind the **3-Second Continuous Presence Debouncer**.
 * **Short Answer:** 
   To prevent false positives from temporary shadows, lighting glitches, or brief pass-bys, the system requires a person to be detected continuously for **3 seconds** before triggering email or Telegram alerts. This is managed using a **continuity counter** that increments when a face is detected and decays slowly when a frame is blurred, ensuring high reliability under dynamic conditions.
 * **In-Depth Technical Detail:** 
-  * In [views.py](file:///s:/Surveillance/app/views.py#L316-L320), the continuity counter behaves as follows:
+  * In [views.py](file:///s:/Smart%20Sight/app/views.py#L596-L599), the continuity counter behaves as follows:
     * **Increment:** If a face is detected in the current frame, the counter increments by `1`:
       `continuous_detection_frames += 1`
     * **Intelligent Decay:** If a face is momentarily missed due to motion blur, the counter decays slowly by subtracting `2` instead of resetting immediately to `0`:
       `continuous_detection_frames = max(0, continuous_detection_frames - 2)`
   * This asymmetric decay ensures the system remains robust during temporary tracking drops, requiring a sustained presence to trigger alerts while resetting quickly once a person has left the field of view.
 
-### Q23. Why does the debouncer trigger strictly on `continuous_detection_frames == 35` instead of `continuous_detection_frames >= 35`?
+### Q19. Why does the debouncer trigger strictly on `continuous_detection_frames == 35` instead of `continuous_detection_frames >= 35`?
 * **Short Answer:** 
   Using `== 35` acts as a **Single-Trigger Edge Detector**. If we used `>= 35`, the system would send notifications on *every single frame* after the threshold is crossed, flooding the user's email and Telegram inbox with dozens of alerts per second while the person remains in view.
 * **In-Depth Technical Detail:** 
@@ -333,21 +275,20 @@ This handbook contains a highly exhaustive, professional collection of **probabl
   * On subsequent frames, the counter continues to rise beyond `35` (e.g., to 36, 37, 38). Because these values do not equal `35`, no further alerts are triggered.
   * The counter resets to `0` only after the person has completely left the frame, priming the system to detect the next event!
 
-### Q24. Walk me through the **65% Confidence Cutoff** mechanism. How does it handle the "Closed-World Assumption"?
+### Q20. Walk me through the **65% Confidence Cutoff** mechanism. How does it handle the "Closed-World Assumption"?
 * **Short Answer:** 
   Under the **Closed-World Assumption**, classification models assume that *every* face they see must belong to one of their pre-trained classes. Consequently, if a stranger stands in front of the camera, the model will falsely classify them as a registered user (e.g., matching them as "Harsh" with a low confidence score like 54%). We solve this by setting a strict **65% confidence cutoff** to identify strangers accurately.
 * **In-Depth Technical Detail:** 
-  * In [views.py](file:///s:/Surveillance/app/views.py#L288-L293), the confidence scoring logic is structured as follows:
+  * In [views.py](file:///s:/Smart%20Sight/app/views.py#L535-L538), the confidence scoring logic is structured as follows:
     * **Confidence $\ge 65\%$:** The match is highly reliable. The system identifies the person by their registered name (e.g., `"Harsh"` or `"Utsav"`).
-    * **Confidence between 50% and 65%:** The system detects a face but the matching confidence is low. This indicates a stranger, and they are labeled as **`"Unknown"`**.
-    * **Confidence below 50%:** Ignored as background noise or a false detection.
+    * **Confidence below 65%:** The system detects a face but the matching confidence is low. This indicates a stranger, and they are labeled as **`"Unknown"`**.
   * This simple thresholding technique successfully prevents misclassification errors, logging strangers as "Unknown" immediately while keeping false positives to a minimum.
 
-### Q25. How does the system handle multi-person frames? Explain the **Intruder Override Priority** rule.
+### Q21. How does the system handle multi-person frames? Explain the **Intruder Override Priority** rule.
 * **Short Answer:** 
   In multi-person scenarios, the system aggregates all detected names in the frame into a unique set. If *any* individual in that set is classified as `"Unknown"`, the overall security status is immediately set to **`UNKNOWN`** (Intruder Warning Priority), overriding any known names. This ensures an intruder cannot suppress a security alert by standing next to an authorized person.
 * **In-Depth Technical Detail:** 
-  * In [views.py](file:///s:/Surveillance/app/views.py#L322-L332), name consolidation and priority override are handled as follows:
+  * In [views.py](file:///s:/Smart%20Sight/app/views.py#L602-L609), name consolidation and priority override are handled as follows:
     ```python
     if detected_names_set:
         detected_name = ", ".join(sorted(list(detected_names_set)))
@@ -359,42 +300,29 @@ This handbook contains a highly exhaustive, professional collection of **probabl
     ```
   * **Scenario:** If `"Harsh"` (known) and a stranger (classified as `"Unknown"`) appear in the frame together, `detected_name` becomes `"Harsh, Unknown"`. Because `"Unknown"` is in the set, `is_known` is set to `False`, triggering an immediate security alert to the user's device!
 
-### Q26. Why is the debouncer frame threshold set to exactly 35? What is the relation to the stream frame rate?
-* **Short Answer:** 
-  The threshold is calibrated to the processing frame rate of the server. On standard CPUs, ONNX inference runs at approximately **11 to 13 frames per second (FPS)**. To achieve a 3-second delay, we multiply the target duration by the frame rate: $3 \text{ seconds} \times 12 \text{ FPS} \approx 36 \text{ frames}$. Setting the threshold to **35 frames** provides a highly accurate 3-second delay in real-world testing.
-* **In-Depth Technical Detail:** 
-  * If the system is deployed on a high-end GPU where the frame rate increases to 30 FPS, a 35-frame threshold would trigger alerts in just 1.1 seconds.
-  * In a production environment, the threshold can be calculated dynamically using the measured system frame rate:
-    $$\text{Threshold} = \text{Target Delay (seconds)} \times \text{Average FPS}$$
-  * This ensures the system delay remains consistent regardless of the underlying hardware performance.
-
 ---
 
 ## ✉️ 5. Asynchronous Infrastructure & Notification Pipelines (Threads, SMTP, Telegram)
 
-### Q27. Sending emails and Telegram alerts takes 1.5 seconds. Explain how you prevented this network block from freezing the camera feed.
+### Q22. Sending emails and Telegram alerts takes 1.5 seconds. Explain how you prevented this network block from freezing the camera feed.
 * **Short Answer:** 
   Running email and Telegram dispatches in the main video loop would cause the camera feed to freeze for 1–2 seconds every time an alert is sent, dropping the frame rate to under 1 FPS. To prevent this, the backend offloads these dispatches to a separate, parallel **Asynchronous Daemon Thread**, allowing the main loop to continue streaming video frames without interruption.
 * **In-Depth Technical Detail:** 
-  * In [views.py](file:///s:/Surveillance/app/views.py#L331-L332), when the debouncer triggers, the system spawns a background thread:
+  * In [views.py](file:///s:/Smart%20Sight/app/views.py#L615-L619), when the debouncer triggers, the system spawns a background thread:
     ```python
     import threading
-    threading.Thread(target=send_alerts, args=(frame_bytes, detected_name, is_known, person_count, max_confidence)).start()
+    threading.Thread(
+        target=send_alerts, 
+        args=(frame_bytes, detected_name, is_known, person_count, max_confidence),
+        kwargs={"clean_frame_bytes": clean_frame_bytes}
+    ).start()
     ```
-  * Spawning this thread offloads the network operations (which spend most of their time waiting on remote mail and messaging servers) to the background. The main execution thread continues rendering the camera feed at full speed!
 
-### Q28. Explain the Python Global Interpreter Lock (GIL). Why does it not block your camera feed when threads handle email/Telegram alerts?
-* **Short Answer:** 
-  The **Global Interpreter Lock (GIL)** restricts standard Python processes to executing one thread at a time. However, the GIL is designed to release its lock during **I/O-bound operations** (such as waiting on network sockets or disk operations). Because sending emails and Telegram alerts consists almost entirely of network waiting, Python releases the GIL during these tasks, allowing other threads to run in parallel.
-* **In-Depth Technical Detail:** 
-  * **CPU-Bound vs. I/O-Bound:** If we ran deep learning inference in multiple Python threads, the GIL would bottleneck performance because inference is a heavy mathematical, CPU-bound operation.
-  * **The Solution:** Our YOLOv8 model runs inside the highly optimized C++ binary engine of ONNX Runtime. This native execution runs outside the Python interpreter, bypassing the GIL completely and allowing the streaming and alert threads to run in parallel with maximum efficiency!
-
-### Q29. Walk me through the dynamic signature design of the `send_alerts(*args, **kwargs)` view function. Why was this refactoring critical?
+### Q23. Explain the dynamic signature design of the `send_alerts(*args, **kwargs)` view function. Why was this refactoring critical?
 * **Short Answer:** 
   During development, Django's auto-reloader updates the code in memory when changes are saved. However, because video streams run in long-running background threads, older threads can remain cached in memory with older function signatures. Changing the signature to use **variable arguments (`*args` and `**kwargs`)** ensures the alert function is highly compatible and prevents the application from crashing due to signature mismatches during updates.
 * **In-Depth Technical Detail:** 
-  * In [views.py](file:///s:/Surveillance/app/views.py#L344-L375), the function is designed to unpack parameters safely regardless of the number of arguments provided:
+  * In [views.py](file:///s:/Smart%20Sight/app/views.py#L836-L860), the function is designed to unpack parameters safely regardless of the number of arguments provided:
     ```python
     def send_alerts(*args, **kwargs):
         # ... Set default values ...
@@ -404,201 +332,202 @@ This handbook contains a highly exhaustive, professional collection of **probabl
             frame_bytes, person_count, confidence = args
         # ... Unpack kwargs and process ...
     ```
-  * This design pattern makes the core notification system robust against hot-reload changes, ensuring stable operations during updates!
 
-### Q30. How is SMTP SSL configured for Gmail dispatches? Explain the security of Google App Passwords.
+### Q24. Explain the Telegram Interactive Approval Flow (OK vs. Cancel callbacks). How are alerts held in-memory before database logging?
 * **Short Answer:** 
-  The system uses Gmail's secure Simple Mail Transfer Protocol (SMTP) server on port **465** with SSL encryption. To connect securely, the system uses a **Google App Password**—a dedicated, 16-character security key generated in the Google Account settings. This allows the application to authenticate securely without exposing the user's primary password or triggering multi-factor authentication blocks.
+  To prevent alert spam and verify security incidents, unrecognized visitor photos are **not** immediately logged to the database. Instead, they are held temporarily in a RAM dictionary (`_pending_alerts`) and sent to the administrator's Telegram as a photo alert with inline **OK ✅** and **Cancel ❌** buttons.
 * **In-Depth Technical Detail:** 
-  * In [views.py](file:///s:/Surveillance/app/views.py#L412-L428), the mail generation uses Python's native `smtplib` and `email` packages:
-    ```python
-    msg = EmailMessage()
-    msg['Subject'] = f'🚨 Smart Sight Alert: Unknown Person Detected'
-    msg.add_attachment(frame_bytes, maintype='image', subtype='jpeg', filename='alert.jpg')
-    
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-        smtp.login(gmail, clean_key)
-        smtp.send_message(msg)
-    ```
-  * The image attachment is encoded as base64 bytes and appended directly to the email body, sending the alert image to the user's inbox in real time!
+  * In [views.py](file:///s:/Smart%20Sight/app/views.py#L927-L950), when a stranger is detected, a unique token (`alert_id`) is generated. The frame bytes and metadata are registered in a global `_pending_alerts` dictionary.
+  * An HTTP post call is sent to Telegram's `sendPhoto` endpoint with custom `reply_markup` inline buttons encoding `callback_data=f"ok_{alert_id}"` or `f"cancel_{alert_id}"`.
+  * If the administrator clicks **OK**, the callback listener extracts the parameters, writes the record permanently to SQLite, and purges the pending memory cache. If they click **Cancel**, the memory is deleted, keeping the database clean.
 
-### Q31. Explain the Telegram Bot API photo alert dispatch pipeline.
+### Q25. What is the "1-Hour Auto-Save Cooldown" and the "10-Minute Timeout Fallback"? Why are they necessary?
 * **Short Answer:** 
-  The Telegram integration uses the official Bot API. When an alert is triggered, the system makes a secure HTTP POST request to the `sendPhoto` endpoint, passing the bot's secret token, the target chat ID, the alert text caption, and the raw image bytes of the current camera frame.
+  * **1-Hour Cooldown:** Once an administrator approves an unknown person, the system activates a **1-hour cooldown** for them. Subsequent detections within the hour are auto-saved directly to the DB and disk silently (sending a simple text notification) to prevent clogging the admin's inbox with duplicate photo buttons.
+  * **10-Minute Timeout:** If the administrator is away or offline, we cannot lose security logs. The background listener automatically triggers a timeout fallback after 10 minutes, writing the stranger snapshot to the database and changing the Telegram caption to `AUTO-SAVED (TIMEOUT) ⏳`.
 * **In-Depth Technical Detail:** 
-  * In [views.py](file:///s:/Surveillance/app/views.py#L431-L442), the dispatch uses Python's `requests` library to make the API call:
+  * Check out the polling timeout scheduler in [views.py](file:///s:/Smart%20Sight/app/views.py#L722-L780). The scheduler loops through pending alerts, identifies entries where `time.time() - alert["saved_at"] > 600`, executes SQLite ORM `RecognitionLog.objects.create(...)`, and triggers `editMessageCaption` updates to the active Telegram thread.
+
+### Q26. Explain how your application listens for Telegram inline button clicks without using public webhooks (allowing local/localhost deployment).
+* **Short Answer:** 
+  Public webhooks require a public domain name (e.g. SSL-certified domains or Ngrok tunnels) to receive POST callbacks from Telegram. Since this application runs locally on edge PCs (`localhost`), it uses a **Daemon Polling Thread** that queries Telegram's `getUpdates` API every 2 seconds, intercepting button clicks (`callback_query` packets) automatically.
+* **In-Depth Technical Detail:** 
+  * On module startup, [views.py](file:///s:/Smart%20Sight/app/views.py#L781-L834) calls `_start_telegram_polling()` which launches a background thread:
     ```python
-    url = f"https://api.telegram.org/bot{telegram_bot_api}/sendPhoto"
-    files = {'photo': ('alert.jpg', frame_bytes, 'image/jpeg')}
-    data = {'chat_id': telegram_chat_id, 'caption': alert_details}
-    response = requests.post(url, files=files, data=data)
+    def poll_loop():
+        # ...
+        url = f"https://api.telegram.org/bot{telegram_bot_api}/getUpdates"
+        params = {"timeout": 10, "offset": offset}
+        response = requests.get(url, params=params)
+        # Parse callbacks, dispatch answers, and trigger timeouts...
     ```
-  * **MIME Multipart Payload:** The image is sent as raw binary data in a `multipart/form-data` request, allowing the system to send the alert image instantly without having to save the file to disk first!
+  * Using a custom offset (`offset = update_id + 1`), it clears handled events from Telegram's servers, ensuring button clicks are executed exactly once.
 
 ---
 
-## 🔒 6. Biometrics, Security, Anti-Spoofing & Enterprise Scaling
+## 🔑 6. Face ID Login, Access Control & Corner HUD Overlays
 
-### Q32. Can this system be bypassed by holding a high-resolution smartphone image of a registered person in front of the camera? Explain why.
+### Q27. Walk me through the security architecture of the Face ID Login page. How does it work?
+* **Short Answer:** 
+  The Face ID Login page allows administrators to authenticate securely using only their face. The camera capture stream runs real-time YOLOv8 classification. When an administrator is detected with $\ge 75\%$ confidence for 2 consecutive frames, the system marks their username as verified, and the login page automatically redirects them to the admin dashboard.
+* **In-Depth Technical Detail:** 
+  * The login page is split into a **Video Generator Stream** (`StreamingHttpResponse`) and an **Asynchronous Status Checker** (`face_login_check`).
+  * Inside [views.py](file:///s:/Smart%20Sight/app/views.py#L322-L345), when an administrator's face matches the database classes with a confidence score above 75%, their session token is validated:
+    ```python
+    if best_conf >= 0.75 and is_admin:
+        success_frames_count += 1
+        if success_frames_count >= 2:
+            _face_login_verified[token] = user.username
+    ```
+  * In the frontend, the login page runs a JavaScript loop that fetches the status from `/face_login_check/?token=<token>` every 1.5 seconds. Once the token is verified in RAM, the backend logs the user in natively (`login(request, user)`) and returns a success response, redirecting the browser immediately.
+
+### Q28. What are the three visual boxes used on the Face ID Login stream? How do their colors and statuses differ?
+* **Short Answer:** 
+  1. **ADMIN (Green Box):** Matches a registered administrator profile with high confidence ($\ge 75\%$), granting access.
+  2. **LOW CONF (Orange Box):** Matches a registered administrator profile but with low confidence ($< 75\%$), denying access.
+  3. **BLOCKED (Red Box):** Matches a non-administrator profile or an unrecognized face, denying access.
+* **In-Depth Technical Detail:** 
+  * See the box rendering rules in [views.py](file:///s:/Smart%20Sight/app/views.py#L304-L320). The color matrices are represented in BGR formats: Green `(84, 185, 25)`, Orange `(0, 165, 255)`, and Red `(0, 0, 255)`.
+
+### Q29. How does the moving scan laser line animation work on the Face ID Login stream?
+* **Short Answer:** 
+  The moving scan laser line is drawn dynamically on each video frame before it is encoded to JPEG. A vertical coordinate variable `laser_y` increments in each frame loop. When the line reaches the bottom border, the direction is inverted, creating a continuous bouncing scan animation.
+* **In-Depth Technical Detail:** 
+  * In [views.py](file:///s:/Smart%20Sight/app/views.py#L283-L289), the coordinates and bounce limits are managed as follows:
+    ```python
+    cv.line(frame, (40, laser_y), (w-40, laser_y), (253, 110, 13), 2)
+    laser_y += laser_direction
+    if laser_y >= h - 40 or laser_y <= 40:
+        laser_direction *= -1
+    ```
+  * This is drawn entirely on the raw frame matrix in memory before being compressed and dispatched, ensuring the laser lines display identically across all client web browsers.
+
+### Q30. Why does `face_login_feed` use a dynamic `token` parameter? Why can't we just write to standard Django session dictionaries inside the streaming generator?
+* **Short Answer:** 
+  Django's session variables are written by modifying the HTTP response cookie headers. Because `StreamingHttpResponse` streams data continuously, the HTTP headers are sent *immediately* on stream initialization and cannot be modified later. Writing session cookies mid-stream will fail. We bypass this limit by using a dynamic `token` and storing the verification status in a thread-safe global dictionary cache (`_face_login_verified`) in application RAM.
+
+---
+
+## 🔒 7. Biometrics, Security, Anti-Spoofing & Enterprise Scaling
+
+### Q31. Can this system be bypassed by holding a high-resolution smartphone image of a registered person in front of the camera? Explain why.
 * **Short Answer:** 
   **Yes, currently.** Because the system uses standard 2D webcams, it processes images as 2D flat matrices. It evaluates facial features (such as the relative distance between eyes, nose, and mouth) but cannot distinguish between a real, three-dimensional face and a flat, high-resolution 2D photo displayed on a screen.
 
-### Q33. Design a solution to prevent this photo-replay and screen-bypass loophole in a production-grade system.
+### Q32. Design a solution to prevent this photo-replay and screen-bypass loophole in a production-grade system.
 * **Short Answer:** 
   To prevent photo or video replay bypasses, we would implement **Liveness Detection (Anti-Spoofing)** using three main techniques: **Active Liveness Checks**, **Passive Texture Analysis**, or **3D Depth Sensors**.
-
-```mermaid
-graph TD
-    A[Camera Input Frame] --> B{Biometric Anti-Spoofing Layer}
-    B -->|Check 1: Active Liveness| C[Prompt user to Blink / Smile / Turn Head]
-    B -->|Check 2: Texture Analysis| D[CNN scans for Moiré pixel patterns & Screen Glare]
-    B -->|Check 3: Hardware Depth| E[Infrared LiDAR sensor maps 3D head curvature]
-    C --> F{All Tests Passed?}
-    D --> F
-    E --> F
-    F -->|Yes| G[Access Granted / Known Status]
-    F -->|No| H[Access Blocked / Spoof Alert]
-```
-
 * **In-Depth Technical Detail:** 
-  1. **Active Liveness Checks:** The system prompts the user to perform random movements in real time (e.g., blink their eyes, smile, or look left/right) and uses facial landmark models to verify these dynamic actions.
-  2. **Passive Moiré/Texture Analysis:** A secondary neural network is trained to detect the micro-textures of paper, screen glare, or pixel moiré patterns that are present in digital displays but absent on real human skin.
-  3. **Hardware-Depth Infrared Mapping:** Using dedicated hardware like depth-sensing cameras or infrared LiDAR (similar to Apple FaceID) to map the 3D structure of the face, blocking 2D photos completely.
+  * **Active Liveness Checks:** The system prompts the user to perform random movements in real time (e.g., blink their eyes, smile, or look left/right) and uses facial landmark models to verify these dynamic actions.
+  * **Passive Moiré/Texture Analysis:** A secondary neural network is trained to detect the micro-textures of paper, screen glare, or pixel moiré patterns that are present in digital displays but absent on real human skin.
+  * **Hardware-Depth Infrared Mapping:** Using dedicated hardware like depth-sensing cameras or infrared LiDAR (similar to Apple FaceID) to map the 3D structure of the face, blocking 2D photos completely.
 
-### Q34. If this system needs to scale to 100 active security cameras, what architectural changes would you propose?
+### Q33. If this system needs to scale to 100 active security cameras, what architectural changes would you propose?
 * **Short Answer:** 
   Running deep learning models for 100 cameras on a single web server is not feasible. We would scale the system by decoupling the web application from the AI inference engine, streaming camera feeds to a high-capacity message broker, and using dedicated GPU worker nodes to process the feeds in parallel.
-
-```mermaid
-graph LR
-    C1[IP Camera 1] --> S[Nginx RTMP Server]
-    C2[IP Camera 2] --> S
-    S --> K[Apache Kafka Frame Queue]
-    K --> W1[GPU Worker 1 Triton]
-    K --> W2[GPU Worker 2 Triton]
-    W1 --> DB[(Central PostgreSQL DB)]
-    W2 --> DB
-    DB --> Web[Django Dashboard Web Server]
-```
-
 * **In-Depth Technical Detail:** 
-  1. **Triton Inference Server:** Move the YOLOv8/ONNX models to dedicated GPU inference nodes running **NVIDIA Triton Inference Server**, which supports dynamic batching and parallel execution.
-  2. **Distributed Message Queues:** Stream raw camera frames to a distributed queue like **Apache Kafka** or **RabbitMQ**.
-  3. **Asynchronous Workers:** Use worker nodes (configured with Celery or custom consumer scripts) to pull frames from the queue, run inference in parallel, write event logs to a central database (e.g., PostgreSQL), and trigger notifications independently.
-
-### Q35. What are the major ethical and privacy concerns associated with deploying real-time facial surveillance systems like Smart Sight?
-* **Short Answer:** 
-  The primary concerns are **consent**, **data protection**, and the risk of **mass tracking**. Surveillance systems must comply with privacy laws (such as GDPR or CCPA), protect personal data, and implement strict security measures to ensure facial data is not accessed by unauthorized parties.
-* **In-Depth Technical Detail:** 
-  * **Consent and Notice:** Clear public notices should be displayed where surveillance is active, and individuals should have a way to request that their data be removed.
-  * **Data Minimization:** Raw video frames should be deleted immediately after processing, and only essential event logs should be retained.
-  * **Access Controls:** Database records, face templates, and notification logs must be encrypted both in transit and at rest, with strict access control policies to prevent data breaches.
+  * **Triton Inference Server:** Move the YOLOv8/ONNX models to dedicated GPU inference nodes running **NVIDIA Triton Inference Server**, which supports dynamic batching and parallel execution.
+  * **Distributed Message Queues:** Stream raw camera frames to a distributed queue like **Apache Kafka** or **RabbitMQ**.
+  * **Asynchronous Workers:** Use worker nodes (configured with Celery or custom consumer scripts) to pull frames from the queue, run inference in parallel, write event logs to a central database (e.g., PostgreSQL), and trigger notifications independently.
 
 ---
 
-## 🛠️ 7. Academic & Software Engineering Methodology
+## 📊 8. Dynamic Reports, Chart.js & Advanced Excel Exports
 
-### Q36. What software development methodology did you follow for this project?
+### Q34. How are dynamic analytical charts rendered on the Reports dashboard? How does data transition from SQLite to Chart.js?
 * **Short Answer:** 
-  The project was developed using the **Agile Iterative Methodology**. We began by building a simple Minimum Viable Product (MVP)—a basic video streaming server. We then progressively added features over multiple sprints, including the custom YOLO model, database logging, debouncing heuristics, and automated email and Telegram notification pipelines.
+  The reports page fetches logs from the SQLite database, performs high-performance SQL grouping and aggregation on the database engine, serializes the aggregated data into JSON format, and passes it to the Django template where Chart.js parses it to render the interactive graphs.
 * **In-Depth Technical Detail:** 
-  * The development was divided into four distinct phases:
-    1. **Phase 1 (Requirements Analysis & Core Setup):** Configuring the Django environment and establishing the camera streaming pipeline.
-    2. **Phase 2 (Model Training & Integration):** Training the custom YOLOv8 model, converting it to ONNX format, and integrating it into the Django backend.
-    3. **Phase 3 (Decision Heuristics & Notifications):** Implementing the 3-second debouncer, the 65% confidence cutoff, and spawning parallel threads for email and Telegram alerts.
-    4. **Phase 4 (Testing & Optimization):** Refining database query speeds, implementing caching, and testing system stability under latency and connection drops.
-
-### Q37. Walk me through the Use-Case scenarios of the Smart Sight surveillance system.
-* **Short Answer:** 
-  The system supports two primary user roles: **Authorized Visitors** (who are recognized and logged silently) and the **System Admin** (who manages the dataset, monitors the live feed, and receives alerts when strangers are detected).
-* **In-Depth Technical Detail:** 
-  * **Use Case Diagram:**
-    ```mermaid
-    left arrow direction
-    actor Admin
-    actor Visitor
-    actor Stranger
-
-    rectangle "Smart Sight Surveillance System" {
-        Admin --> (Monitor Live Camera Stream)
-        Admin --> (Register & Manage Face Dataset)
-        Admin --> (View Daily Analytical Reports)
-        Admin --> (Receive Telegram & Email Alerts)
-        
-        Visitor --> (Pass Front Camera)
-        Visitor --> (Log Presence Silently)
-        
-        Stranger --> (Stay in Front of Camera > 3s)
-        Stranger --> (Trigger Intruder Alarm System)
-    }
+  * In [views.py](file:///s:/Smart%20Sight/app/views.py#L1105-L1151), the backend aggregates daily detection frequencies for the top 5 most frequent individuals over the last 7 days.
+  * This aggregated data is converted into a standard JSON string format (`chart_labels` and `chart_datasets`) and passed to the template.
+  * In the HTML template, we use Django's `|safe` filter within a JavaScript script block:
+    ```javascript
+    const chartLabels = {{ chart_labels|safe }};
+    const chartDatasets = {{ chart_datasets|safe }};
+    new Chart(ctx, { type: 'line', data: { labels: chartLabels, datasets: chartDatasets } });
     ```
 
-### Q38. How would you write a professional unit test to verify that the 3-second debouncer triggers exactly when expected?
+### Q35. What is the difference between "Combined Consolidated" and "Separated Worksheets" export modes in your Excel exporter?
 * **Short Answer:** 
-  We can write a Django Unit Test using mock frameworks to simulate camera frames. By feeding a mock generator 34 consecutive frames containing a person, we verify that no alerts are sent. We then feed the 35th frame and verify that the background alert thread is triggered exactly once.
+  * **Combined Consolidated Mode:** Compiles all filtered records chronologically and writes them into a single, master sheet tab, making it ideal for overall auditing.
+  * **Separated Worksheets Mode:** Scans the dataset, isolates each unique individual, and dynamically creates a dedicated sheet tab for each person. This organizes the logs by individual, making it much easier to track specific people.
 * **In-Depth Technical Detail:** 
-  * We use Python's `unittest.mock` to mock the `send_alerts` function and inspect its execution:
+  * In [views.py](file:///s:/Smart%20Sight/app/views.py#L1571-L1592), the exporter dynamically handles these modes:
     ```python
-    from django.test import TestCase
-    from unittest.mock import patch
-    import numpy as np
-
-    class SurveillanceHeuristicsTest(TestCase):
-        @patch('app.views.send_alerts')
-        def test_debouncer_exact_trigger(self, mock_send_alerts):
-            # Simulate a mock person detection frame sequence
-            # Frame 1 to 34: increment the counter
-            counter = 0
-            for i in range(34):
-                counter += 1
-                if counter == 35:
-                    mock_send_alerts(b'img', 'Test', True, 1, 0.9)
-            
-            # Verify no alert has been dispatched yet
-            mock_send_alerts.assert_not_called()
-            
-            # Frame 35: trigger the alert
-            counter += 1
-            if counter == 35:
-                mock_send_alerts(b'img', 'Test', True, 1, 0.9)
-                
-            # Verify the alert was dispatched exactly once
-            self.assertEqual(mock_send_alerts.call_count, 1)
+    if export_mode == 'separated':
+        # Create a set of unique person names
+        for p_name in sorted(list(unique_persons)):
+            ws = wb.create_sheet(title=p_name[:30])
+            person_reports = [r for r in daily_reports if r['person_name'] == p_name]
+            _fill_excel_worksheet(ws, person_reports, title)
     ```
 
-### Q39. What are the system prerequisites, and how does a developer set up and run this codebase locally?
+### Q36. Why does your Excel exporter write to a memory buffer instead of saving files to the server's hard drive? Explain the code.
 * **Short Answer:** 
-  The project requires **Python 3.10+** and **OpenCV** system libraries. To set up the project locally:
-  1. Clone the repository and navigate to the project directory.
-  2. Create and activate a Python virtual environment.
-  3. Install the dependencies listed in `requirements.txt`.
-  4. Create a `.env` file containing the Gmail and Telegram credentials.
-  5. Run database migrations and start the Django development server.
+  Saving temporary files to the server's hard drive causes storage leaks over time as users download reports. Writing the spreadsheet directly to an **in-memory byte buffer** (`BytesIO`) and streaming it to the browser avoids this issue entirely, keeping the server clean and fast.
 * **In-Depth Technical Detail:** 
-  * **Step-by-Step Setup Guide:**
-    ```bash
-    # 1. Create a virtual environment
-    python -m venv env
-
-    # 2. Activate the virtual environment
-    # On Windows:
-    .\env\Scripts\activate
-    # On Linux/macOS:
-    source env/bin/activate
-
-    # 3. Install required packages
-    pip install -r requirements.txt
-
-    # 4. Apply database migrations
-    python manage.py migrate
-
-    # 5. Create an administrative superuser account
-    python manage.py createsuperuser
-
-    # 6. Start the local development server
-    python manage.py runserver
+  * In [views.py](file:///s:/Smart%20Sight/app/views.py#L1599-L1605), the memory buffer is generated and streamed:
+    ```python
+    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    wb.save(response)
+    return response
     ```
-  * Open your browser and go to `http://127.0.0.1:8000/` to access the application dashboard!
+  * By passing the Django `HttpResponse` directly into `wb.save()`, the openpyxl library writes the generated binary spreadsheet directly into the network stream, serving the download instantly without any disk usage!
+
+---
+
+## 🤖 9. AI Face Auto-Classification, ArcFace & Density-Based Clustering (DBSCAN)
+
+### Q37. What is the Face Auto-Classification feature in Smart Sight? What problem does it solve?
+* **Short Answer:** 
+  In real-world surveillance operations, unrecognized individuals ("Unknown Strangers") accumulate rapidly, creating thousands of unorganized capture snapshots. Manually organizing, identifying, and cataloging these images is an administrative bottleneck. The **AI Face Auto-Classification Engine** solves this by automatically clustering unrecognized captures into distinct same-person groups, allowing administrators to catalog entire groups of identical faces in a single action.
+
+### Q38. Walk me through the step-by-step pipeline of the Face Auto-Classification Engine.
+* **Short Answer & Flow:**
+  The auto-classification engine processes unknown captures in five stages:
+  1. **Scan:** Scans `media/unknown/` for all unrecognized stranger face images.
+  2. **Cache Check:** Queries `.embedding_cache.json`. If cached, it fetches the face embedding instantly from disk (cache hit).
+  3. **Crop Pipeline (Cache Miss):** Runs a low-latency explicit OpenCV Haar Cascade face detector to crop the face with 10% padding.
+  4. **ArcFace Extraction:** Feeds the cropped face into DeepFace configured with the **ArcFace** model (`detector_backend='skip'`) to extract a 512-dimensional vector.
+  5. **DBSCAN Clustering:** Group vectors using Cosine Distance and DBSCAN to partition them into clusters (same-person groups), outliers (singletons), and noise (no face found).
+
+### Q39. Why did you choose ArcFace over FaceNet or other embedding models?
+* **Short Answer:** 
+  **ArcFace (Additive Angular Margin Loss)** is a state-of-the-art deep facial recognition model that yields significantly higher biometric accuracy than older models like FaceNet. It utilizes an additive angular margin penalty in the loss function to maximize decision boundaries (forcing embeddings of the same person closer together while driving embeddings of different people much farther apart). ArcFace outputs **512-dimensional vectors**, offering a richer biometric signature than FaceNet's 128-dimensional outputs.
+
+### Q40. Why did you implement an explicit OpenCV face detector before passing images to DeepFace? Why not let DeepFace handle detection?
+* **Short Answer:** 
+  **CPU Performance Optimization.** DeepFace's default internal face detectors (like RetinaFace or MTCNN) are extremely heavy and slow, taking **1.5 to 3.0 seconds** per image on standard CPU edge architectures. By writing an explicit OpenCV crop pipeline, we utilize a fast Haar Cascade face detector (`~10ms`) to locate the face, crop it, and then pass it to DeepFace with `detector_backend='skip'`. This bypasses DeepFace's internal detectors entirely, reducing processing time from seconds to a fraction of a second, which represents a **300%+ speedup**!
+
+### Q41. Why did you choose DBSCAN instead of K-Means for clustering unknown face captures?
+* **Short Answer & Technical Difference:**
+  * **K-Means:** Requires you to specify the number of clusters ($K$) beforehand. In a security environment, we **do not know** how many unique strangers have walked past the camera, making K-Means mathematically unsuitable.
+  * **DBSCAN (Density-Based Spatial Clustering of Applications with Noise):** 
+    1. **Dynamic Clusters ($K$ is unknown):** Natively discovers the optimal number of groups based on spatial density.
+    2. **Noise Isolation (Outliers):** Automatically isolates "singletons" (outliers) that do not fit into any group, labelling them as label `-1`, which prevents single-time visitors from corrupting dense face clusters.
+
+### Q42. Explain the significance of the DBSCAN hyperparameters chosen (`metric='cosine'` and `eps=0.30`).
+* **Short Answer:** 
+  The hyperparameters are tuned specifically to align with ArcFace embeddings:
+  * `metric='cosine'`: Cosine distance ($1 - \text{Cosine Similarity}$) measures the angular difference between vectors rather than Euclidean distance, which is the mathematically correct metric for comparing high-dimensional normalized face embeddings.
+  * `eps=0.30`: The maximum cosine distance between two faces to be considered the same person. In ArcFace, two faces of the same person typically have a cosine distance of $\le 0.30$. Setting $eps$ to $0.30$ ensures tight, highly accurate clusters and completely prevents different strangers from being merged into the same group.
+
+### Q43. What happens behind the scenes during the "Atomic Register & Move" database transaction?
+* **Short Answer:** 
+  When an administrator assigns a name to a group of captured faces, the system executes an atomic transaction (`transaction.atomic()`) to ensure absolute data integrity. If any single step fails, the entire transaction rolls back to prevent corrupt data states.
+* **In-Depth Steps:**
+  1. **Person Check:** Automatically gets or creates the `Person` record matching the assigned name in the database.
+  2. **Physical File Move:** Moves the files from `media/unknown/` to `media/dataset/<person_name>/` using unique names (incremental loop counter) to avoid file overwriting.
+  3. **PersonImage Creation:** Inserts a database record in `PersonImage` pointing to the new relative path of the image.
+  4. **Log Clean Up:** Deletes the old, obsolete entries in `RecognitionLog` associated with these files to keep the audit database clean.
+  5. **Cache Invalidation:** Erases the moved image keys from the `.embedding_cache.json` file.
+
+### Q44. How does the automated self-learning data collection pipeline function in your backend? Explain the logic.
+* **Short Answer:** 
+  To continuously improve face recognition models over time, Smart Sight features a **self-learning dataset collection loop**. When a registered visitor (e.g. `"Harsh"`) is identified with a high confidence score ($\ge 65\%$), the backend automatically captures the clean, unannotated video frame and saves it directly into their dataset folder as a new training sample.
+* **In-Depth Technical Detail:** 
+  * In [views.py](file:///s:/Smart%20Sight/app/views.py#L993-L1013), when a known user is identified, we retrieve their profile, compute the dynamic directory path `media/dataset/<name>/`, write the clean NumPy frame as a JPEG image, and register it in `PersonImage`. This adds new training images dynamically without interrupting system operations.
 
 ---
 *Prepared specifically for Harsh Shrimali. Authorized for Academic submissions, Project presentations, and Technical reviews.*

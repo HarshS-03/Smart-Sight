@@ -1,4 +1,4 @@
-from django.urls import path
+﻿from django.urls import path
 from app import views
 
 urlpatterns = [
@@ -7,6 +7,8 @@ urlpatterns = [
     path('about/',views.about,name='about'),
     path('detection/',views.detection,name='detection'),
     path('dataset/',views.dataset,name='dataset'),
+    path('dataset/classify/', views.classify_unknowns, name='classify_unknowns'),
+    path('dataset/assign/', views.assign_classified_group, name='assign_classified_group'),
     path('video_feed/',views.video_feed,name='video_feed'),
     path('video_stats/',views.video_stats,name='video_stats'),
     path('login/',views.login_user,name='login'),
